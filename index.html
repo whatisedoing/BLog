@@ -44,6 +44,13 @@ input[type=range]{padding:0;accent-color:var(--brass);height:32px;border:none;ba
 .entry .sub,.entry .note{color:var(--muted);font-size:.9rem}
 .entry .note{font-style:italic;margin-top:2px}
 .empty{color:var(--muted);font-style:italic;padding:8px 0}
+.hit{cursor:pointer}
+.hit:hover{background:var(--leather2)}
+button.quiet:hover{background:var(--leather2)}
+.meta{color:var(--muted);font-size:.92rem}
+.avg{display:flex;align-items:center;gap:12px;margin:10px 0 2px}
+.avg .stars{font-size:1.7rem}
+.avg .big{font-size:2rem;color:var(--brass)}
 .hidden{display:none}
 </style>
 </head>
@@ -103,15 +110,29 @@ input[type=range]{padding:0;accent-color:var(--brass);height:32px;border:none;ba
 
     <h2>Recent check-ins</h2>
     <section class="card" id="recent"></section>
+
+    <h2>Your beers</h2>
+    <section class="card" id="beerList"></section>
   </main>
+
+  <!-- BEER PAGE -->
+  <section id="detail" class="hidden">
+    <button id="backBtn" class="quiet">Back</button>
+    <h2 id="dName" style="margin-top:14px"></h2>
+    <section class="card">
+      <div id="dMeta" class="meta"></div>
+      <div class="avg"><span id="dStars" class="stars" style="--p:0%">★★★★★</span><span id="dAvg" class="big"></span></div>
+      <div id="dCount" class="meta"></div>
+      <button id="logAgain">Log another check-in</button>
+    </section>
+    <h2>Check-ins</h2>
+    <section class="card" id="dList"></section>
+  </section>
 </div>
 
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-// ====== PASTE YOUR TWO VALUES HERE (Supabase > Project Settings > API) ======
-const SUPABASE_URL = "https://wupafyrlpzxbvhpvpfvg.supabase.co";
-const SUPABASE_KEY = "sb_publishable_3O7138aIMet40AwenYXGNQ_5hPBZewU";
-// ===========================================================================
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
@@ -140,11 +161,20 @@ function updateRating(){
 $("rating").addEventListener("input", updateRating);
 
 // ---- show login or app ----
+let signedIn = false, currentBeerId = null;
 function show(session){
-  $("login").classList.toggle("hidden", !!session);
-  $("app").classList.toggle("hidden", !session);
-  $("signout").classList.toggle("hidden", !session);
-  if (session){ $("when").value = nowLocal(); updateRating(); load(); }
+  const was = signedIn; signedIn = !!session;
+  $("login").classList.toggle("hidden", signedIn);
+  $("signout").classList.toggle("hidden", !signedIn);
+  if (!signedIn){
+    $("app").classList.add("hidden"); $("detail").classList.add("hidden"); currentBeerId = null; return;
+  }
+  if (!was) showApp();
+}
+function showApp(){
+  currentBeerId = null;
+  $("detail").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("when").value = nowLocal(); updateRating(); window.scrollTo(0, 0); load();
 }
 
 // ---- login / logout ----
@@ -157,7 +187,14 @@ $("loginBtn").addEventListener("click", async () => {
 });
 $("signout").addEventListener("click", () => db.auth.signOut());
 
-// ---- load beers and recent check-ins ----
+// ---- load beers, averages and recent check-ins ----
+let stats = {};
+function fmtDate(iso){ return new Date(iso).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" }); }
+function fmtTime(iso){ return new Date(iso).toLocaleTimeString(undefined, { hour:"numeric", minute:"2-digit" }); }
+function div(cls, text){ const d = document.createElement("div"); d.className = cls; if (text != null) d.textContent = text; return d; }
+function avgOf(s){ return s && s.rated ? s.sum / s.rated : null; }
+function countText(n){ return n + (n === 1 ? " check-in" : " check-ins"); }
+
 async function load(){
   const b = await db.from("beers").select("*").order("name");
   if (b.error){ setMsg($("saveMsg"), "Could not load beers: " + b.error.message, "err"); return; }
@@ -165,31 +202,101 @@ async function load(){
   const list = $("beerNames"); list.innerHTML = "";
   beers.forEach(x => { const o = document.createElement("option"); o.value = x.name; list.appendChild(o); });
 
+  const all = await db.from("checkins").select("beer_id, rating");
+  stats = {};
+  (all.data || []).forEach(r => {
+    const s = stats[r.beer_id] || (stats[r.beer_id] = { n: 0, sum: 0, rated: 0 });
+    s.n++; if (r.rating != null){ s.sum += parseFloat(r.rating); s.rated++; }
+  });
+  renderBeerList();
+
   const c = await db.from("checkins")
-    .select("id, rating, serving_style, notes, checked_in_at, beers(name, brewery_name)")
-    .order("checked_in_at", { ascending: false }).limit(20);
+    .select("id, beer_id, rating, serving_style, notes, checked_in_at, beers(name, brewery_name)")
+    .order("checked_in_at", { ascending: false }).limit(10);
   const box = $("recent"); box.innerHTML = "";
   if (c.error){ setMsg($("saveMsg"), "Could not load check-ins: " + c.error.message, "err"); return; }
   if (!c.data.length){
-    const e = document.createElement("div"); e.className = "empty";
-    e.textContent = "Nothing logged yet. Your first check-in will appear here.";
-    box.appendChild(e); return;
+    box.appendChild(div("empty", "Nothing logged yet. Your first check-in will appear here.")); return;
   }
   c.data.forEach(ci => {
-    const row = document.createElement("div"); row.className = "entry";
-    const top = document.createElement("div"); top.className = "top";
-    const nm = document.createElement("span"); nm.className = "name"; nm.textContent = ci.beers.name;
-    top.appendChild(nm);
+    const row = div("entry hit"); const top = div("top");
+    top.appendChild(div("name", ci.beers.name));
     if (ci.rating != null) top.appendChild(starsEl(parseFloat(ci.rating)));
-    const sub = document.createElement("div"); sub.className = "sub";
-    const when = new Date(ci.checked_in_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
-    sub.textContent = [ci.beers.brewery_name, ci.serving_style, when,
-      ci.rating != null ? parseFloat(ci.rating).toFixed(2) : null].filter(Boolean).join(", ");
-    row.appendChild(top); row.appendChild(sub);
-    if (ci.notes){ const n = document.createElement("div"); n.className = "note"; n.textContent = ci.notes; row.appendChild(n); }
+    row.appendChild(top);
+    row.appendChild(div("sub", [ci.beers.brewery_name, ci.serving_style, fmtDate(ci.checked_in_at),
+      ci.rating != null ? parseFloat(ci.rating).toFixed(2) : null].filter(Boolean).join(", ")));
+    if (ci.notes) row.appendChild(div("note", ci.notes));
+    row.addEventListener("click", () => openBeer(ci.beer_id));
     box.appendChild(row);
   });
 }
+
+function renderBeerList(){
+  const box = $("beerList"); box.innerHTML = "";
+  if (!beers.length){ box.appendChild(div("empty", "No beers yet.")); return; }
+  const rows = beers.map(x => ({ beer: x, s: stats[x.id] })).sort((p, q) =>
+    ((avgOf(q.s) ?? -1) - (avgOf(p.s) ?? -1)) || p.beer.name.localeCompare(q.beer.name));
+  rows.forEach(({ beer, s }) => {
+    const avg = avgOf(s), row = div("entry hit"), top = div("top");
+    top.appendChild(div("name", beer.name));
+    if (avg != null) top.appendChild(starsEl(avg));
+    row.appendChild(top);
+    row.appendChild(div("sub", [beer.brewery_name, beer.style, countText(s ? s.n : 0),
+      avg != null ? "avg " + avg.toFixed(2) : null].filter(Boolean).join(", ")));
+    row.addEventListener("click", () => openBeer(beer.id));
+    box.appendChild(row);
+  });
+}
+
+// ---- the beer page ----
+async function openBeer(id){
+  const beer = beers.find(x => x.id === id); if (!beer) return;
+  currentBeerId = id;
+  $("app").classList.add("hidden"); $("detail").classList.remove("hidden"); window.scrollTo(0, 0);
+  $("dName").textContent = beer.name;
+  $("dMeta").textContent = [beer.brewery_name, beer.style].filter(Boolean).join(", ");
+  $("dCount").textContent = "Loading..."; $("dList").innerHTML = "";
+
+  const c = await db.from("checkins")
+    .select("id, rating, serving_style, notes, checked_in_at")
+    .eq("beer_id", id).order("checked_in_at", { ascending: false });
+  if (currentBeerId !== id) return;
+  if (c.error){ $("dCount").textContent = "Could not load: " + c.error.message; return; }
+
+  const rows = c.data, rated = rows.filter(r => r.rating != null);
+  const avg = rated.length ? rated.reduce((t, r) => t + parseFloat(r.rating), 0) / rated.length : null;
+  $("dAvg").textContent = avg != null ? avg.toFixed(2) : "Not rated";
+  $("dStars").style.setProperty("--p", (avg != null ? avg / 5 * 100 : 0) + "%");
+  $("dCount").textContent = countText(rows.length) + (rows.length
+    ? ", first " + fmtDate(rows[rows.length - 1].checked_in_at) + ", latest " + fmtDate(rows[0].checked_in_at) : "");
+
+  if (!rows.length) $("dList").appendChild(div("empty", "No check-ins for this beer."));
+  rows.forEach(ci => {
+    const row = div("entry"), top = div("top");
+    top.appendChild(div("name", fmtDate(ci.checked_in_at) + ", " + fmtTime(ci.checked_in_at)));
+    if (ci.rating != null) top.appendChild(starsEl(parseFloat(ci.rating)));
+    row.appendChild(top);
+    row.appendChild(div("sub", [ci.serving_style, ci.rating != null ? parseFloat(ci.rating).toFixed(2) : "Not rated"]
+      .filter(Boolean).join(", ")));
+    if (ci.notes) row.appendChild(div("note", ci.notes));
+    const del = document.createElement("button");
+    del.className = "quiet"; del.textContent = "Delete"; del.style.marginTop = "6px";
+    del.addEventListener("click", async () => {
+      if (!confirm("Delete this check-in?")) return;
+      const r = await db.from("checkins").delete().eq("id", ci.id);
+      if (r.error){ alert("Could not delete: " + r.error.message); return; }
+      await load(); openBeer(id);
+    });
+    row.appendChild(del);
+    $("dList").appendChild(row);
+  });
+}
+$("backBtn").addEventListener("click", showApp);
+$("logAgain").addEventListener("click", () => {
+  const b = beers.find(x => x.id === currentBeerId);
+  showApp();
+  if (b){ $("name").value = b.name; $("brewery").value = b.brewery_name || ""; $("style").value = b.style || ""; }
+});
 
 // ---- pick an existing beer: fill in its brewery and style ----
 $("name").addEventListener("change", () => {
