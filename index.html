@@ -57,6 +57,28 @@ button.chip.on,button.chip.on:hover{background:var(--brass);color:var(--oak);bor
 .btnrow{display:flex;gap:10px}
 .btnrow button{flex:1;width:auto}
 .btnrow button.quiet{padding:11px 16px;font-size:1.02rem}
+.sug{border:1px solid var(--line);border-radius:4px;background:var(--oak);max-height:230px;overflow-y:auto;margin-top:4px}
+button.opt{display:block;width:100%;text-align:left;margin:0;border:none;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:9px 10px;font-size:.95rem}
+button.opt:last-child{border-bottom:none}
+button.opt:hover{background:var(--leather2)}
+button.opt small{display:block;color:var(--muted);font-size:.8rem}
+.seg{display:flex;gap:8px}
+button.sv{flex:1;margin:0;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--oak);border-color:var(--line);color:var(--muted);font-size:.78rem;border-radius:6px}
+button.sv:hover{background:var(--leather2)}
+button.sv svg{fill:currentColor}
+button.sv .ic{display:flex;align-items:center;height:28px}
+button.sv.on,button.sv.on:hover{background:var(--brass);color:var(--oak);border-color:var(--brass)}
+.tabs{display:flex;gap:8px;margin:-6px 0 14px}
+button.tab{flex:1;margin:0;padding:8px;font-size:.95rem}
+button.tab.on,button.tab.on:hover{background:var(--brass);color:var(--oak);border-color:var(--brass)}
+.badge{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.badge:last-child{border-bottom:none}
+.badge .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.badge .name{font-size:1.05rem}
+.medal{width:46px;height:46px;flex:none;border-radius:50%;display:grid;place-items:center;border:2px solid var(--c,#4a3b2c);color:var(--c,#4a3b2c);background:var(--oak)}
+.medal svg{width:24px;height:24px;fill:currentColor}
+.bar{height:6px;background:#3a2c20;border-radius:3px;overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:var(--brass)}
 .modal{position:fixed;inset:0;z-index:10;background:rgba(10,7,5,.93);display:flex;justify-content:center;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 16px) 16px 16px;overflow:auto}
 .modal .panel{width:100%;max-width:520px;background:var(--leather);border:1px solid var(--brass);border-radius:6px;padding:16px}
 #reader{width:100%;min-height:200px;background:#000;border-radius:4px;overflow:hidden}
@@ -72,6 +94,10 @@ button.scan{margin-top:0}
     <h1>BeerLog</h1>
     <button id="signout" class="quiet hidden">Sign out</button>
   </header>
+  <nav id="nav" class="tabs hidden">
+    <button class="tab quiet" data-view="app">Log</button>
+    <button class="tab quiet" data-view="badges">Badges</button>
+  </nav>
 
   <section id="login" class="card hidden">
     <label for="email">Email</label>
@@ -89,13 +115,13 @@ button.scan{margin-top:0}
       <div id="scanNote" class="meta" style="margin-top:8px"></div>
       <div id="bf"></div>
 
-      <label for="serving">Served as</label>
-      <select id="serving"><option value="">Not sure</option><option>Can</option><option>Bottle</option><option>Draft</option><option>Cask</option></select>
+      <div class="lbl">Served as</div>
+      <div id="serving" class="seg"></div>
       <label for="size">Size</label>
       <select id="size"></select>
 
       <label for="vname">Where</label>
-      <input id="vname" list="venueNames" autocomplete="off" placeholder="Bar, restaurant, or home">
+      <input id="vname" autocomplete="off" placeholder="Bar, restaurant, or home">
       <label for="vcity">Where (city)</label>
       <input id="vcity" autocomplete="off">
 
@@ -104,6 +130,7 @@ button.scan{margin-top:0}
 
       <div class="lbl">Flavours</div>
       <div id="tags" class="chips"></div>
+      <input id="flavSearch" autocomplete="off" placeholder="Search for another flavour" style="margin-top:10px">
 
       <label for="rating">Rating</label>
       <div class="rate">
@@ -144,6 +171,12 @@ button.scan{margin-top:0}
     <h2>Check-ins</h2>
     <section class="card" id="dList"></section>
   </section>
+
+  <section id="badges" class="hidden">
+    <h2>Badges</h2>
+    <div id="badgeSummary" class="meta"></div>
+    <div id="badgeList"></div>
+  </section>
 </div>
 
 <div id="scanner" class="modal hidden" role="dialog" aria-label="Barcode scanner">
@@ -160,10 +193,6 @@ button.scan{margin-top:0}
   </div>
 </div>
 
-<datalist id="beerNames"></datalist>
-<datalist id="breweryNames"></datalist>
-<datalist id="styleNames"></datalist>
-<datalist id="venueNames"></datalist>
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -177,7 +206,7 @@ const meta = { b: {}, e: {} }, seq = { b: 0, e: 0 }, timers = {};
 const STYLES = ["IPA","West Coast IPA","Hazy IPA","Double IPA","Session IPA","Pale Ale","American Pale Ale","Amber Ale","Red Ale","Brown Ale","Blonde Ale","Golden Ale","Cream Ale","Kolsch","Pilsner","Czech Pilsner","Lager","Helles","Dunkel","Marzen","Bock","Stout","Imperial Stout","Milk Stout","Porter","Wheat Beer","Hefeweizen","Witbier","Saison","Belgian Tripel","Belgian Dubbel","Belgian Strong Ale","Sour","Gose","Berliner Weisse","Fruited Sour","Barleywine","Scotch Ale","Cider"];
 const FAMILIES = ["IPA","Pale Ale","Stout & Porter","Lager","Pilsner","Sour","Wheat","Belgian & Farmhouse","Amber & Red","Brown Ale","Blonde & Golden","Strong Ale","Other"];
 const FLAVOURS = ["Hoppy","Citrus","Tropical","Piney","Floral","Malty","Caramel","Roasty","Chocolate","Coffee","Fruity","Sour","Funky","Spicy","Smoky","Bready","Honey","Crisp","Smooth","Bitter","Sweet","Dry","Light","Rich"];
-const SIZES = [[355,"355 ml (standard can)"],[473,"473 ml (tall can)"],[341,"341 ml (bottle)"],[330,"330 ml"],[440,"440 ml"],[500,"500 ml"],[568,"568 ml (pint)"],[750,"750 ml"]];
+const SIZES = [[118,"118 ml (taster)"],[355,"355 ml (standard can)"],[473,"473 ml (tall can)"],[341,"341 ml (bottle)"],[330,"330 ml"],[440,"440 ml"],[500,"500 ml"],[568,"568 ml (pint)"],[750,"750 ml"]];
 
 function familyOf(st){
   const s = st.toLowerCase();
@@ -210,12 +239,12 @@ function starsEl(r){
 function bfHTML(p){
   return `
   <label for="${p}name">Beer</label>
-  <input id="${p}name" list="beerNames" autocomplete="off" placeholder="Beer name">
+  <input id="${p}name" autocomplete="off" placeholder="Beer name">
   <label for="${p}brewery">Brewery</label>
-  <input id="${p}brewery" list="breweryNames" autocomplete="off" placeholder="Type a name to look it up">
+  <input id="${p}brewery" autocomplete="off" placeholder="Type a name to look it up">
   <div id="${p}res" class="res"></div>
   <label for="${p}style">Style</label>
-  <input id="${p}style" list="styleNames" autocomplete="off" placeholder="e.g. West Coast IPA">
+  <input id="${p}style" autocomplete="off" placeholder="e.g. West Coast IPA">
   <details id="${p}more"><summary>More beer details</summary>
     <div class="grid2">
       <div><label for="${p}city">Brewery city</label><input id="${p}city"></div>
@@ -242,9 +271,10 @@ function fillBF(p, b){
   set("name", b.name); set("brewery", b.brewery_name); set("style", b.style); set("city", b.brewery_city);
   set("region", b.brewery_region); set("country", b.brewery_country); set("type", b.brewery_type);
   set("web", b.brewery_website); set("barcode", b.barcode); set("fam", b.style_family); set("abv", b.abv); set("ibu", b.ibu);
-  $(p + "fam").dataset.manual = b.style_family ? "1" : "";
+  $(p + "fam").dataset.manual = (b.style_family && b.style_family !== familyOf(b.style || "")) ? "1" : "";
   meta[p] = { id: b.open_brewery_db_id, lat: b.brewery_lat, lng: b.brewery_lng };
   $(p + "res").textContent = "";
+  if (p === "b") renderFlav();
 }
 
 function readBF(p){
@@ -271,29 +301,45 @@ function pickBrewery(p, br){
   box.appendChild(div("meta", "Filled from Open Brewery DB. You can edit anything that looks wrong."));
 }
 
+function useOwnBrewery(p, b){
+  const set = (id, v) => { $(p + id).value = v || ""; };
+  set("brewery", b.brewery_name); set("city", b.brewery_city); set("region", b.brewery_region);
+  set("country", b.brewery_country); set("type", b.brewery_type); set("web", b.brewery_website);
+  meta[p] = { id: b.open_brewery_db_id, lat: b.brewery_lat, lng: b.brewery_lng };
+  const box = $(p + "res"); box.innerHTML = "";
+  box.appendChild(div("meta", "Filled from your earlier beers."));
+}
+
 async function searchBrewery(p){
   const q = $(p + "brewery").value.trim(), box = $(p + "res"), my = ++seq[p];
   box.innerHTML = "";
+  if (q.length < 2) return;
+  const addBtn = (label, fn) => {
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "pick"; btn.textContent = label;
+    btn.addEventListener("click", fn); box.appendChild(btn);
+  };
+  const ql = q.toLowerCase(), seen = new Set();
+  beers.forEach(b => {
+    const k = (b.brewery_name || "").toLowerCase();
+    if (k && k.includes(ql) && !seen.has(k) && seen.size < 3){
+      seen.add(k); addBtn(b.brewery_name + " - from your beers", () => useOwnBrewery(p, b));
+    }
+  });
   if (q.length < 3) return;
-  box.appendChild(div("meta", "Searching Open Brewery DB..."));
+  const note = div("meta", "Searching Open Brewery DB..."); box.appendChild(note);
   try {
-    const r = await fetch("https://api.openbrewerydb.org/v1/breweries/search?per_page=6&query=" + encodeURIComponent(q));
+    const r = await fetch("https://api.openbrewerydb.org/v1/breweries/search?per_page=5&query=" + encodeURIComponent(q));
     if (!r.ok) throw new Error("status " + r.status);
     const list = await r.json();
     if (my !== seq[p]) return;
-    box.innerHTML = "";
-    if (!list.length){ box.appendChild(div("meta", "No match found. You can fill in the details by hand.")); return; }
-    list.forEach(br => {
-      const btn = document.createElement("button");
-      btn.type = "button"; btn.className = "pick";
-      btn.textContent = br.name + " - " + [br.city, br.state_province || br.state, br.country].filter(Boolean).join(", ");
-      btn.addEventListener("click", () => pickBrewery(p, br));
-      box.appendChild(btn);
-    });
+    note.remove();
+    if (!list.length && !seen.size){ box.appendChild(div("meta", "No match found. You can fill in the details by hand.")); return; }
+    list.forEach(br => addBtn(br.name + " - " + [br.city, br.state_province || br.state, br.country].filter(Boolean).join(", "),
+      () => pickBrewery(p, br)));
   } catch (e){
     if (my !== seq[p]) return;
-    box.innerHTML = "";
-    box.appendChild(div("meta", "Brewery lookup isn't available right now. You can type the details by hand."));
+    note.textContent = "Brewery lookup isn't available right now. You can type the details by hand.";
   }
 }
 
@@ -313,8 +359,9 @@ function wireBF(p){
   });
   $(p + "style").addEventListener("input", () => {
     const f = $(p + "fam"); if (!f.dataset.manual) f.value = familyOf($(p + "style").value);
+    if (p === "b") renderFlav();
   });
-  $(p + "fam").addEventListener("change", () => { $(p + "fam").dataset.manual = "1"; });
+  $(p + "fam").addEventListener("change", () => { $(p + "fam").dataset.manual = "1"; if (p === "b") renderFlav(); });
 }
 
 /* ---------- rating slider and flavour chips ---------- */
@@ -325,20 +372,276 @@ function updateRating(){
 }
 $("rating").addEventListener("input", updateRating);
 
-function buildChips(){
-  FLAVOURS.forEach(t => {
+
+/* ---------- icons (Material Design Icons, Apache 2.0) ---------- */
+const ICON = {
+  mdiCylinder: "M12 2C9.89 2 3 2.29 3 6V18C3 21.71 9.89 22 12 22C14.11 22 21 21.71 21 18V6C21 2.29 14.11 2 12 2M12 10C13.38 10 16.8 9.87 19 8.75V15.25C16.8 14.13 13.38 14 12 14S7.2 14.13 5 15.25V8.75C7.2 9.87 10.62 10 12 10M12 4C15.87 4 19 4.89 19 6C19 7.11 15.87 8 12 8C8.13 8 5 7.11 5 6C5 4.89 8.13 4 12 4M12 20C8.13 20 5 19.11 5 18C5 16.9 8.13 16 12 16C15.87 16 19 16.9 19 18C19 19.11 15.87 20 12 20Z",
+  mdiBottleSoda: "M15 11V20A2 2 0 0 1 13 22H11A2 2 0 0 1 9 20V11A2 2 0 0 1 9.6 9.58C11.1 7.89 11 4 11 4H10V2H14V4H13S12.9 7.89 14.4 9.58A2 2 0 0 1 15 11Z",
+  mdiFaucet: "M19 14V16H16V14.28L19 14M19 13C19 11.9 18 11 16.8 11H10V10H5V21H10V13.91L19 13M5 9H10V7L15.36 5.21C15.74 5.09 16 4.73 16 4.33C16 3.68 15.36 3.23 14.75 3.45L5 7V9Z",
+  mdiGlassTulip: "M8,2H16C15.67,2.67 15.33,3.33 15.58,5C15.83,6.67 16.67,9.33 16.25,10.74C15.83,12.14 14.17,12.28 13.33,13.86C12.5,15.44 12.5,18.47 13.08,19.9C13.67,21.33 14.83,21.17 15.42,21.25C16,21.33 16,21.67 16,22H8C8,21.67 8,21.33 8.58,21.25C9.17,21.17 10.33,21.33 10.92,19.9C11.5,18.47 11.5,15.44 10.67,13.86C9.83,12.28 8.17,12.14 7.75,10.74C7.33,9.33 8.17,6.67 8.42,5C8.67,3.33 8.33,2.67 8,2M10,4C10,5.19 9.83,6.17 9.64,7H14.27C14.13,6.17 14,5.19 14,4H10Z",
+  mdiBeer: "M4,2H19L17,22H6L4,2M6.2,4L7.8,20H8.8L7.43,6.34C8.5,6 9.89,5.89 11,7C12.56,8.56 15.33,7.69 16.5,7.23L16.8,4H6.2Z",
+  mdiHops: "M21,12C21,12 12.5,10 12.5,2C12.5,2 21,2 21,12M3,12C3,2 11.5,2 11.5,2C11.5,10 3,12 3,12M12,6.5C12,6.5 13,8.66 15,10.5C14.76,14.16 12,16 12,16C12,16 9.24,14.16 9,10.5C11,8.66 12,6.5 12,6.5M20.75,13.25C20.75,13.25 20,17 18,19C18,19 15.53,17.36 14.33,14.81C15.05,13.58 15.5,12.12 15.75,11.13C17.13,12.18 18.75,13 20.75,13.25M15.5,18.25C14.5,20.25 12,21.75 12,21.75C12,21.75 9.5,20.25 8.5,18.25C8.5,18.25 9.59,17.34 10.35,15.8C10.82,16.35 11.36,16.79 12,17C12.64,16.79 13.18,16.35 13.65,15.8C14.41,17.34 15.5,18.25 15.5,18.25M3.25,13.25C5.25,13 6.87,12.18 8.25,11.13C8.5,12.12 8.95,13.58 9.67,14.81C8.47,17.36 6,19 6,19C4,17 3.25,13.25 3.25,13.25Z",
+  mdiBarley: "M7.33,18.33C6.5,17.17 6.5,15.83 6.5,14.5C8.17,15.5 9.83,16.5 10.67,17.67L11,18.23V15.95C9.5,15.05 8.08,14.13 7.33,13.08C6.5,11.92 6.5,10.58 6.5,9.25C8.17,10.25 9.83,11.25 10.67,12.42L11,13V10.7C9.5,9.8 8.08,8.88 7.33,7.83C6.5,6.67 6.5,5.33 6.5,4C8.17,5 9.83,6 10.67,7.17C10.77,7.31 10.86,7.46 10.94,7.62C10.77,7 10.66,6.42 10.65,5.82C10.64,4.31 11.3,2.76 11.96,1.21C12.65,2.69 13.34,4.18 13.35,5.69C13.36,6.32 13.25,6.96 13.07,7.59C13.15,7.45 13.23,7.31 13.33,7.17C14.17,6 15.83,5 17.5,4C17.5,5.33 17.5,6.67 16.67,7.83C15.92,8.88 14.5,9.8 13,10.7V13L13.33,12.42C14.17,11.25 15.83,10.25 17.5,9.25C17.5,10.58 17.5,11.92 16.67,13.08C15.92,14.13 14.5,15.05 13,15.95V18.23L13.33,17.67C14.17,16.5 15.83,15.5 17.5,14.5C17.5,15.83 17.5,17.17 16.67,18.33C15.92,19.38 14.5,20.3 13,21.2V23H11V21.2C9.5,20.3 8.08,19.38 7.33,18.33Z",
+  mdiGlassMug: "M10,4V7H18V4H10M8,2H20L21,2V3L20,4V20L21,21V22H20L8,22H7V21L8,20V18.6L4.2,16.83C3.5,16.5 3,15.82 3,15V8A2,2 0 0,1 5,6H8V4L7,3V2H8M5,15L8,16.39V8H5V15Z",
+  mdiCompass: "M14.19,14.19L6,18L9.81,9.81L18,6M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,10.9A1.1,1.1 0 0,0 10.9,12A1.1,1.1 0 0,0 12,13.1A1.1,1.1 0 0,0 13.1,12A1.1,1.1 0 0,0 12,10.9Z",
+  mdiFactory: "M4,18V20H8V18H4M4,14V16H14V14H4M10,18V20H14V18H10M16,14V16H20V14H16M16,18V20H20V18H16M2,22V8L7,12V8L12,12V8L17,12L18,2H21L22,12V22H2Z",
+  mdiEarth: "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z",
+  mdiMapMarker: "M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z",
+  mdiLeafMaple: "M21.79,13L16,16L17,18L13,17.25V21H11V17.25L7,18L8,16L2.21,13L3.21,11.27L1.61,8L5.21,7.77L6.21,6L9.63,9.9L8,5H10L12,2L14,5H16L14.37,9.9L17.79,6L18.79,7.73L22.39,7.96L20.79,11.19L21.79,13Z",
+  mdiStorefront: "M5.06 3C4.63 3 4.22 3.14 3.84 3.42C3.46 3.7 3.24 4.06 3.14 4.5L2.11 8.91C1.86 10 2.06 10.92 2.69 11.73C2.81 11.85 2.93 11.97 3.04 12.07C3.63 12.64 4.28 13 5.22 13C6.16 13 6.91 12.59 7.47 12.05C8.1 12.67 8.86 13 9.8 13C10.64 13 11.44 12.63 12 12.07C12.68 12.7 13.45 13 14.3 13C15.17 13 15.91 12.67 16.54 12.05C17.11 12.62 17.86 13 18.81 13C19.76 13 20.43 12.65 21 12.06C21.09 11.97 21.18 11.87 21.28 11.77C21.94 10.95 22.14 10 21.89 8.91L20.86 4.5C20.73 4.06 20.5 3.7 20.13 3.42C19.77 3.14 19.38 3 18.94 3M18.89 4.97L19.97 9.38C20.06 9.81 19.97 10.2 19.69 10.55C19.44 10.86 19.13 11 18.75 11C18.44 11 18.17 10.9 17.95 10.66C17.73 10.43 17.61 10.16 17.58 9.84L16.97 5M5.06 5H7.03L6.42 9.84C6.3 10.63 5.91 11 5.25 11C4.84 11 4.53 10.86 4.31 10.55C4.03 10.2 3.94 9.81 4.03 9.38M9.05 5H11V9.7C11 10.05 10.89 10.35 10.64 10.62C10.39 10.88 10.08 11 9.7 11C9.36 11 9.07 10.88 8.84 10.59C8.61 10.3 8.5 10 8.5 9.66V9.5M13 5H14.95L15.5 9.5C15.58 9.92 15.5 10.27 15.21 10.57C14.95 10.87 14.61 11 14.2 11C13.89 11 13.61 10.88 13.36 10.62C13.11 10.35 13 10.05 13 9.7M3 14.03V19C3 20.11 3.89 21 5 21C9.67 21 14.33 21 19 21C20.1 21 21 20.11 21 19V14.05C20.45 14.63 19.75 14.96 19 15C18 15.03 17.25 14.74 16.54 14.05C15.94 14.65 15.14 15 14.3 15C13.4 15 12.6 14.64 12 14.07C11.43 14.64 10.65 15 9.78 15C8.87 15 8.07 14.65 7.47 14.05C6.89 14.64 6.1 15 5.23 15C4.33 15 3.66 14.65 3 14.03Z",
+  mdiStar: "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z",
+  mdiMedal: "M20,2H4V4L9.81,8.36C6.14,9.57 4.14,13.53 5.35,17.2C6.56,20.87 10.5,22.87 14.19,21.66C17.86,20.45 19.86,16.5 18.65,12.82C17.95,10.71 16.3,9.05 14.19,8.36L20,4V2M14.94,19.5L12,17.78L9.06,19.5L9.84,16.17L7.25,13.93L10.66,13.64L12,10.5L13.34,13.64L16.75,13.93L14.16,16.17L14.94,19.5Z"
+};
+function svgIcon(name, size){
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"' + (size ? ' style="width:' + size + 'px;height:' + size + 'px"' : "") +
+    '><path d="' + ICON[name] + '"/></svg>';
+}
+
+/* ---------- short suggestion lists (top 5, scrollable) ---------- */
+function attachSuggest(input, source, onPick, keepFocus){
+  const box = document.createElement("div"); box.className = "sug hidden";
+  input.insertAdjacentElement("afterend", box);
+  function render(){
+    const q = input.value.trim().toLowerCase();
+    box.innerHTML = "";
+    const items = q ? source(q).slice(0, 5) : [];
+    if (!items.length){ box.classList.add("hidden"); return; }
+    items.forEach(it => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "opt"; b.textContent = it.label;
+      if (it.sub){ const sm = document.createElement("small"); sm.textContent = it.sub; b.appendChild(sm); }
+      b.addEventListener("pointerdown", e => e.preventDefault());
+      b.addEventListener("click", () => { onPick(it); box.classList.add("hidden"); if (!keepFocus) input.blur(); });
+      box.appendChild(b);
+    });
+    box.classList.remove("hidden");
+  }
+  input.addEventListener("input", render);
+  input.addEventListener("focus", render);
+  input.addEventListener("blur", () => setTimeout(() => box.classList.add("hidden"), 150));
+}
+function beerMatches(q){
+  const toks = q.split(/\s+/).filter(Boolean);
+  return beers.map(b => {
+    const n = b.name.toLowerCase(), br = (b.brewery_name || "").toLowerCase(), all = n + " " + br;
+    if (!toks.every(t => all.includes(t))) return null;
+    return { beer: b, score: n.startsWith(q) ? 0 : n.includes(q) ? 1 : br.includes(q) ? 2 : 3 };
+  }).filter(Boolean).sort((a, b) => a.score - b.score || a.beer.name.localeCompare(b.beer.name))
+    .map(x => ({ label: x.beer.name, sub: x.beer.brewery_name || "", beer: x.beer }));
+}
+function styleMatches(q){ return STYLES.filter(x => x.toLowerCase().includes(q)).map(x => ({ label: x })); }
+function attachAll(){
+  attachSuggest($("bname"), beerMatches, it => fillBF("b", it.beer));
+  ["b", "e"].forEach(p => attachSuggest($(p + "style"), styleMatches, it => {
+    $(p + "style").value = it.label; $(p + "style").dispatchEvent(new Event("input"));
+  }));
+  attachSuggest($("vname"), q => Object.keys(venues).filter(v => v.toLowerCase().includes(q))
+    .map(v => ({ label: v, sub: venues[v] })), it => { $("vname").value = it.label; if (!$("vcity").value) $("vcity").value = venues[it.label] || ""; });
+  attachSuggest($("flavSearch"), q => {
+    const out = FLAV_ALL.filter(t => !selFlav.has(t) && t.toLowerCase().includes(q)).map(t => ({ label: t }));
+    if (!FLAV_ALL.some(t => t.toLowerCase() === q)) out.push({ label: 'Add "' + q + '"', custom: q });
+    return out;
+  }, it => {
+    const t = it.custom ? it.custom.charAt(0).toUpperCase() + it.custom.slice(1) : it.label;
+    selFlav.add(t); $("flavSearch").value = ""; renderFlav();
+  }, true);
+}
+
+/* ---------- serving style icons ---------- */
+const SERVINGS = [["Can", "mdiCylinder", 20], ["King Can", "mdiCylinder", 27], ["Bottle", "mdiBottleSoda", 24], ["Tap", "mdiFaucet", 24], ["Taster", "mdiGlassTulip", 24]];
+const AUTO_ML = { "Can": 355, "King Can": 473, "Bottle": 341, "Tap": 473, "Taster": 118 };
+function ensureSize(ml){
+  const sel = $("size");
+  if (![...sel.options].some(o => o.value === String(ml))) sel.add(new Option(ml + " ml", ml));
+}
+function buildServing(){
+  SERVINGS.forEach(([v, icon, size]) => {
     const b = document.createElement("button");
-    b.type = "button"; b.className = "chip"; b.textContent = t; b.setAttribute("aria-pressed", "false");
-    b.addEventListener("click", () => { b.setAttribute("aria-pressed", b.classList.toggle("on")); });
-    $("tags").appendChild(b);
+    b.type = "button"; b.className = "sv"; b.dataset.v = v; b.title = v; b.setAttribute("aria-pressed", "false");
+    b.innerHTML = '<span class="ic">' + svgIcon(icon, size) + "</span><span>" + v + "</span>";
+    b.addEventListener("click", () => setServing(b.classList.contains("on") ? "" : v));
+    $("serving").appendChild(b);
+  });
+  $("size").addEventListener("change", () => { $("size").dataset.auto = ""; });
+}
+function setServing(v){
+  document.querySelectorAll("#serving .sv").forEach(b => {
+    const on = b.dataset.v === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  if (v && AUTO_ML[v]){
+    const sel = $("size");
+    if (!sel.value || sel.dataset.auto === "1"){ ensureSize(AUTO_ML[v]); sel.value = String(AUTO_ML[v]); sel.dataset.auto = "1"; }
+  }
+}
+function getServing(){ const b = document.querySelector("#serving .sv.on"); return b ? b.dataset.v : ""; }
+
+/* ---------- flavours: a few suggestions, search for the rest ---------- */
+const FLAV_ALL = ["Hoppy","Citrus","Tropical","Piney","Floral","Grassy","Herbal","Earthy","Fruity","Berry","Stone Fruit","Banana","Clove","Spicy","Malty","Caramel","Toffee","Biscuit","Bready","Toasty","Nutty","Honey","Vanilla","Roasty","Chocolate","Coffee","Smoky","Sour","Tart","Funky","Crisp","Smooth","Creamy","Light","Rich","Bitter","Sweet","Dry","Boozy"];
+const DEFAULT_FLAV = ["Hoppy","Malty","Crisp","Fruity","Smooth","Bitter"];
+const FAM_FLAV = {
+  "IPA": ["Hoppy","Citrus","Tropical","Piney","Floral","Bitter"],
+  "Pale Ale": ["Hoppy","Citrus","Floral","Crisp","Bready","Fruity"],
+  "Stout & Porter": ["Roasty","Chocolate","Coffee","Smoky","Rich","Smooth"],
+  "Lager": ["Crisp","Light","Bready","Smooth","Dry","Malty"],
+  "Pilsner": ["Crisp","Floral","Bitter","Dry","Light","Bready"],
+  "Sour": ["Sour","Tart","Fruity","Funky","Citrus","Dry"],
+  "Wheat": ["Fruity","Citrus","Banana","Clove","Light","Smooth"],
+  "Belgian & Farmhouse": ["Spicy","Fruity","Clove","Banana","Sweet","Funky"],
+  "Amber & Red": ["Caramel","Malty","Toasty","Biscuit","Sweet","Smooth"],
+  "Brown Ale": ["Malty","Caramel","Nutty","Toasty","Smooth","Sweet"],
+  "Blonde & Golden": ["Crisp","Light","Honey","Fruity","Bready","Smooth"],
+  "Strong Ale": ["Rich","Boozy","Sweet","Caramel","Toffee","Fruity"]
+};
+const FLAV_HINTS = [
+  [/hazy|neipa|new england/, ["Tropical","Citrus","Fruity","Smooth","Hoppy","Creamy"]],
+  [/west coast/, ["Piney","Bitter","Citrus","Hoppy","Dry","Floral"]],
+  [/milk stout|oatmeal|cream stout/, ["Creamy","Chocolate","Sweet","Coffee","Smooth","Roasty"]],
+  [/imperial stout|russian imperial/, ["Roasty","Chocolate","Boozy","Coffee","Rich","Vanilla"]],
+  [/fruited|smoothie/, ["Berry","Tart","Fruity","Sour","Tropical","Sweet"]]
+];
+const selFlav = new Set();
+let beerFlav = {}, allCk = [];
+
+function currentFormBeer(){
+  const n = $("bname").value.trim().toLowerCase(), br = $("bbrewery").value.trim().toLowerCase();
+  if (!n) return null;
+  return beers.find(x => x.name.toLowerCase() === n && (x.brewery_name || "").toLowerCase() === br) ||
+    beers.find(x => x.name.toLowerCase() === n) || null;
+}
+function flavSuggestions(){
+  const style = $("bstyle").value.toLowerCase(), fam = $("bfam").value || familyOf($("bstyle").value);
+  const beer = currentFormBeer();
+  const prev = beer && beerFlav[beer.id] ? Object.entries(beerFlav[beer.id]).sort((a, b) => b[1] - a[1]).map(e => e[0]) : [];
+  const hint = FLAV_HINTS.find(h => h[0].test(style));
+  const base = hint ? hint[1] : (FAM_FLAV[fam] || DEFAULT_FLAV);
+  const out = [];
+  [...prev, ...base].forEach(t => { if (!selFlav.has(t) && !out.includes(t)) out.push(t); });
+  return out.slice(0, 6);
+}
+function renderFlav(){
+  const box = $("tags"); box.innerHTML = "";
+  const mk = (t, on) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip" + (on ? " on" : ""); b.textContent = t; b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.addEventListener("click", () => { if (on) selFlav.delete(t); else selFlav.add(t); renderFlav(); });
+    box.appendChild(b);
+  };
+  [...selFlav].forEach(t => mk(t, true));
+  flavSuggestions().forEach(t => mk(t, false));
+}
+
+/* ---------- fetch every check-in (pages of 1000) ---------- */
+async function fetchAllCheckins(){
+  const out = [];
+  for (let from = 0; ; from += 1000){
+    const r = await db.from("checkins")
+      .select("id, beer_id, rating, serving_style, venue_name, venue_city, flavour_tags, checked_in_at")
+      .order("checked_in_at", { ascending: true }).order("id").range(from, from + 999);
+    if (r.error || !r.data) break;
+    out.push(...r.data);
+    if (r.data.length < 1000) break;
+  }
+  return out;
+}
+
+/* ---------- badges ---------- */
+const TIER_COLORS = ["#b07a45", "#b9bec6", "#d1a049", "#7fc4b0", "#8fb4e8", "#c58bd6"];
+const BADGES = [];
+function addBadge(group, id, name, icon, tiers, unit, key){ BADGES.push({ group, id, name, icon, tiers, unit, key }); }
+const nz = x => (x || "").trim().toLowerCase();
+const SERVE_MAP = { "Can": "Can", "King Can": "King Can", "Bottle": "Bottle", "Tap": "Tap", "Draft": "Tap", "Taster": "Taster" };
+
+addBadge("Volume", "checkins", "Regular", "mdiBeer", [10, 25, 50, 100, 250, 500], "check-ins", c => c.id);
+addBadge("Volume", "beers", "Taste Tester", "mdiGlassTulip", [10, 25, 50, 100, 250], "different beers", c => c.beer_id);
+[["Can", "Can Collector", "mdiCylinder"], ["King Can", "King of Cans", "mdiCylinder"], ["Bottle", "Bottle Opener", "mdiBottleSoda"],
+ ["Tap", "On Tap", "mdiFaucet"], ["Taster", "Flight Taster", "mdiGlassTulip"]].forEach(([sv, nm, ic]) =>
+  addBadge("Serving style", "serve-" + sv, nm, ic, [10, 25, 50, 100], "drinks served as " + sv.toLowerCase(),
+    c => SERVE_MAP[c.serving_style] === sv ? c.id : null));
+[["IPA", "Hop Head", "mdiHops"], ["Pale Ale", "Pale Ale Pal", "mdiBeer"], ["Stout & Porter", "Dark Side", "mdiGlassMug"],
+ ["Lager", "Lager Lover", "mdiBeer"], ["Pilsner", "Pils Pro", "mdiGlassTulip"], ["Sour", "Pucker Up", "mdiGlassTulip"],
+ ["Wheat", "Wheat Whisperer", "mdiBarley"], ["Belgian & Farmhouse", "Farmhouse Friend", "mdiBarley"],
+ ["Amber & Red", "Amber Hour", "mdiBeer"], ["Brown Ale", "Brown Study", "mdiGlassMug"],
+ ["Blonde & Golden", "Golden Hour", "mdiBeer"], ["Strong Ale", "Heavy Hitter", "mdiGlassMug"]].forEach(([fam, nm, ic]) =>
+  addBadge("Beer styles", "style-" + fam, nm, ic, [10, 25, 50, 100], "different " + fam + " beers",
+    (c, b) => b.style_family === fam ? c.beer_id : null));
+addBadge("Exploring", "styles", "Style Explorer", "mdiCompass", [5, 10, 20, 30], "different styles", (c, b) => nz(b.style) || null);
+addBadge("Exploring", "breweries", "Brewery Hopper", "mdiFactory", [10, 25, 50, 100], "different breweries", (c, b) => nz(b.brewery_name) || null);
+addBadge("Exploring", "countries", "Globetrotter", "mdiEarth", [3, 5, 10, 20], "countries", (c, b) => nz(b.brewery_country) || null);
+addBadge("Exploring", "regions", "Region Roamer", "mdiMapMarker", [3, 5, 10, 20], "provinces or states",
+  (c, b) => nz(b.brewery_region) ? nz(b.brewery_country) + "|" + nz(b.brewery_region) : null);
+addBadge("Exploring", "manitoba", "Manitoba Made", "mdiLeafMaple", [5, 10, 20, 30], "Manitoba breweries",
+  (c, b) => /^(manitoba|mb)$/i.test((b.brewery_region || "").trim()) ? nz(b.brewery_name) || null : null);
+addBadge("Exploring", "venues", "Barfly", "mdiStorefront", [10, 25, 50], "different venues", c => nz(c.venue_name) || null);
+addBadge("Rating", "five", "Five-Star Find", "mdiStar", [1, 10, 25], "five-star beers", c => c.rating != null && parseFloat(c.rating) >= 5 ? c.beer_id : null);
+addBadge("Rating", "critic", "Tough Critic", "mdiMedal", [10, 25], "beers rated below 2 stars", c => c.rating != null && parseFloat(c.rating) < 2 ? c.beer_id : null);
+
+function computeBadges(){
+  const byId = {}; beers.forEach(b => { byId[b.id] = b; });
+  const cks = [...allCk].sort((a, b) => a.checked_in_at < b.checked_in_at ? -1 : a.checked_in_at > b.checked_in_at ? 1 : 0);
+  return BADGES.map(bd => {
+    const seen = new Set(), dates = [];
+    cks.forEach(c => {
+      const k = bd.key(c, byId[c.beer_id] || {});
+      if (k && !seen.has(k)){ seen.add(k); const i = bd.tiers.indexOf(seen.size); if (i >= 0) dates[i] = c.checked_in_at; }
+    });
+    const n = seen.size, level = bd.tiers.filter(t => n >= t).length;
+    return Object.assign({}, bd, { n, level, dates, next: bd.tiers[level] });
   });
 }
-function chosenTags(){ return [...document.querySelectorAll("#tags .chip.on")].map(b => b.textContent); }
+function earnedKeys(){
+  const out = new Set();
+  computeBadges().forEach(b => { for (let i = 1; i <= b.level; i++) out.add(b.id + ":" + i); });
+  return out;
+}
+function newBadgeNames(before){
+  const out = [];
+  computeBadges().forEach(b => { for (let i = 1; i <= b.level; i++) if (!before.has(b.id + ":" + i)) out.push(b.name + " level " + i); });
+  return out;
+}
+function badgeRow(b){
+  const row = div("badge"), medal = div("medal");
+  if (b.level) medal.style.setProperty("--c", TIER_COLORS[Math.min(b.level - 1, TIER_COLORS.length - 1)]);
+  medal.innerHTML = svgIcon(b.icon);
+  const body = div(""); body.style.flex = "1";
+  const top = div("top");
+  top.appendChild(div("name", b.name));
+  top.appendChild(div("meta", b.level ? "Level " + b.level + " of " + b.tiers.length : "Not started"));
+  body.appendChild(top);
+  body.appendChild(div("meta", b.next ? b.n + " of " + b.next + " " + b.unit : b.n + " " + b.unit + ", all levels earned"));
+  if (b.next){
+    const bar = div("bar"), fill = document.createElement("i"), prev = b.level ? b.tiers[b.level - 1] : 0;
+    fill.style.width = Math.min(100, (b.n - prev) / (b.next - prev) * 100) + "%";
+    bar.appendChild(fill); body.appendChild(bar);
+  }
+  if (b.level && b.dates[b.level - 1]) body.appendChild(div("meta", "Level " + b.level + " earned " + fmtDate(b.dates[b.level - 1])));
+  row.appendChild(medal); row.appendChild(body);
+  return row;
+}
+function renderBadges(){
+  const list = $("badgeList"); list.innerHTML = "";
+  const res = computeBadges();
+  const total = res.reduce((t, b) => t + b.tiers.length, 0), got = res.reduce((t, b) => t + b.level, 0);
+  $("badgeSummary").textContent = got + " of " + total + " badge levels earned";
+  [...new Set(res.map(b => b.group))].forEach(g => {
+    const h = document.createElement("h2"); h.textContent = g; list.appendChild(h);
+    const card = document.createElement("section"); card.className = "card";
+    res.filter(b => b.group === g).forEach(b => card.appendChild(badgeRow(b)));
+    list.appendChild(card);
+  });
+}
+
+/* ---------- views ---------- */
+function setView(v){
+  ["app", "detail", "badges"].forEach(id => $(id).classList.toggle("hidden", id !== v));
+  $("nav").classList.remove("hidden");
+  const tab = v === "detail" ? "app" : v;
+  document.querySelectorAll("#nav .tab").forEach(b => b.classList.toggle("on", b.dataset.view === tab));
+  if (v === "badges") renderBadges();
+}
 
 /* ---------- start-up wiring ---------- */
 $("bf").innerHTML = bfHTML("b"); $("ebf").innerHTML = bfHTML("e");
-wireBF("b"); wireBF("e"); buildChips();
-STYLES.forEach(s => { const o = document.createElement("option"); o.value = s; $("styleNames").appendChild(o); });
+wireBF("b"); wireBF("e"); buildServing(); renderFlav(); attachAll();
 $("size").innerHTML = '<option value="">Not sure</option>' + SIZES.map(s => `<option value="${s[0]}">${s[1]}</option>`).join("");
 
 /* ---------- show login or app ---------- */
@@ -346,12 +649,12 @@ function show(session){
   const was = signedIn; signedIn = !!session;
   $("login").classList.toggle("hidden", signedIn);
   $("signout").classList.toggle("hidden", !signedIn);
-  if (!signedIn){ $("app").classList.add("hidden"); $("detail").classList.add("hidden"); currentBeerId = null; return; }
+  if (!signedIn){ ["app", "detail", "badges", "nav"].forEach(id => $(id).classList.add("hidden")); currentBeerId = null; return; }
   if (!was) showApp();
 }
 function showApp(){
   currentBeerId = null;
-  $("detail").classList.add("hidden"); $("app").classList.remove("hidden");
+  setView("app");
   $("when").value = nowLocal(); updateRating(); window.scrollTo(0, 0); load();
 }
 
@@ -372,17 +675,15 @@ async function load(){
   const b = await db.from("beers").select("*").order("name");
   if (b.error){ setMsg($("saveMsg"), "Could not load beers: " + b.error.message, "err"); return; }
   beers = b.data;
-  fillList("beerNames", beers.map(x => x.name));
-  fillList("breweryNames", beers.map(x => x.brewery_name));
-
-  const all = await db.from("checkins").select("beer_id, rating, venue_name, venue_city");
-  stats = {}; venues = {};
-  (all.data || []).forEach(r => {
+  allCk = await fetchAllCheckins();
+  stats = {}; venues = {}; beerFlav = {};
+  allCk.forEach(r => {
     const s = stats[r.beer_id] || (stats[r.beer_id] = { n: 0, sum: 0, rated: 0 });
     s.n++; if (r.rating != null){ s.sum += parseFloat(r.rating); s.rated++; }
     if (r.venue_name && (!venues[r.venue_name] || r.venue_city)) venues[r.venue_name] = r.venue_city || "";
+    (r.flavour_tags || []).forEach(t => { const f = beerFlav[r.beer_id] || (beerFlav[r.beer_id] = {}); f[t] = (f[t] || 0) + 1; });
   });
-  fillList("venueNames", Object.keys(venues));
+  renderFlav();
   renderBeerList();
 
   const c = await db.from("checkins")
@@ -427,7 +728,7 @@ function addLine(parent, label, text){ if (text) parent.appendChild(div("meta", 
 async function openBeer(id){
   const beer = beers.find(x => x.id === id); if (!beer) return;
   currentBeerId = id;
-  $("app").classList.add("hidden"); $("detail").classList.remove("hidden"); $("editBox").classList.add("hidden");
+  setView("detail"); $("editBox").classList.add("hidden");
   window.scrollTo(0, 0);
   $("dName").textContent = beer.name;
 
@@ -526,6 +827,7 @@ $("saveBtn").addEventListener("click", async () => {
   if (!f.name){ setMsg($("saveMsg"), "Enter the beer's name first.", "err"); return; }
   $("saveBtn").disabled = true; setMsg($("saveMsg"), "Saving...");
   try {
+    const before = earnedKeys();
     let beer = beers.find(x => x.name.toLowerCase() === f.name.toLowerCase() &&
       (x.brewery_name || "").toLowerCase() === (f.brewery_name || "").toLowerCase());
     if (!beer){
@@ -546,22 +848,23 @@ $("saveBtn").addEventListener("click", async () => {
     const ck = await db.from("checkins").insert({
       beer_id: beer.id,
       rating: parseFloat($("rating").value),
-      serving_style: $("serving").value || null,
+      serving_style: getServing() || null,
       size_ml: $("size").value ? parseInt($("size").value, 10) : null,
       venue_name: $("vname").value.trim() || null,
       venue_city: $("vcity").value.trim() || null,
-      flavour_tags: chosenTags(),
+      flavour_tags: [...selFlav],
       notes: $("notes").value.trim() || null,
       checked_in_at: when
     });
     if (ck.error) throw ck.error;
 
     fillBF("b"); $("bmore").open = false; $("scanNote").textContent = "";
-    ["serving","size","vname","vcity","notes"].forEach(id => { $(id).value = ""; });
-    document.querySelectorAll("#tags .chip.on").forEach(b => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); });
+    ["size","vname","vcity","notes"].forEach(id => { $(id).value = ""; });
+    $("size").dataset.auto = ""; setServing(""); selFlav.clear(); $("flavSearch").value = ""; renderFlav();
     $("rating").value = 3; updateRating(); $("when").value = nowLocal();
-    setMsg($("saveMsg"), "Check-in saved.", "ok");
     await load();
+    const gained = newBadgeNames(before);
+    setMsg($("saveMsg"), "Check-in saved." + (gained.length ? " New badge: " + gained.join(", ") + "." : ""), "ok");
   } catch (e){
     setMsg($("saveMsg"), "Could not save: " + e.message, "err");
   }
@@ -674,12 +977,13 @@ function applyOFF(code, p){
     }
   }
   const pk = p.packaging_tags || [];
-  if (pk.some(t => /(^|[:-])can($|-)/.test(t))) $("serving").value = "Can";
-  else if (pk.some(t => /bottle/.test(t))) $("serving").value = "Bottle";
+  if (pk.some(t => /(^|[:-])can($|-)/.test(t))) setServing((parseInt($("size").value, 10) || 0) >= 440 ? "King Can" : "Can");
+  else if (pk.some(t => /bottle/.test(t))) setServing("Bottle");
 
   $("bmore").open = true;
   scanNote((beerish ? "Filled from Open Food Facts. Check everything below." :
     "Found in Open Food Facts, but it doesn't look like a beer. Check everything below.") , code);
+  renderFlav();
   if (brand) searchBrewery("b");
 }
 
@@ -690,6 +994,11 @@ $("manualCode").addEventListener("keydown", e => { if (e.key === "Enter"){ e.pre
 $("torchBtn").addEventListener("click", async () => {
   if (!torch) return;
   try { torchOn = !torchOn; await torch.apply(torchOn); } catch (e){ torchOn = !torchOn; }
+});
+
+$("nav").addEventListener("click", e => {
+  const t = e.target.closest(".tab"); if (!t) return;
+  if (t.dataset.view === "app") showApp(); else { currentBeerId = null; setView("badges"); window.scrollTo(0, 0); }
 });
 
 db.auth.getSession().then(({ data }) => show(data.session));
