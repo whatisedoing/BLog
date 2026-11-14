@@ -57,6 +57,12 @@ button.chip.on,button.chip.on:hover{background:var(--brass);color:var(--oak);bor
 .btnrow{display:flex;gap:10px}
 .btnrow button{flex:1;width:auto}
 .btnrow button.quiet{padding:11px 16px;font-size:1.02rem}
+.modal{position:fixed;inset:0;z-index:10;background:rgba(10,7,5,.93);display:flex;justify-content:center;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 16px) 16px 16px;overflow:auto}
+.modal .panel{width:100%;max-width:520px;background:var(--leather);border:1px solid var(--brass);border-radius:6px;padding:16px}
+#reader{width:100%;min-height:200px;background:#000;border-radius:4px;overflow:hidden}
+.row{display:flex;gap:10px;align-items:stretch}
+.row button{width:auto;margin-top:0;white-space:nowrap}
+button.scan{margin-top:0}
 .hidden{display:none}
 </style>
 </head>
@@ -79,6 +85,8 @@ button.chip.on,button.chip.on:hover{background:var(--brass);color:var(--oak);bor
   <main id="app" class="hidden">
     <h2>Log a beer</h2>
     <section class="card">
+      <button id="scanBtn" class="scan" type="button">Scan a barcode</button>
+      <div id="scanNote" class="meta" style="margin-top:8px"></div>
       <div id="bf"></div>
 
       <label for="serving">Served as</label>
@@ -138,6 +146,20 @@ button.chip.on,button.chip.on:hover{background:var(--brass);color:var(--oak);bor
   </section>
 </div>
 
+<div id="scanner" class="modal hidden" role="dialog" aria-label="Barcode scanner">
+  <div class="panel">
+    <div id="reader"></div>
+    <div id="scanStatus" class="msg"></div>
+    <button id="torchBtn" type="button" class="quiet hidden" style="margin-top:6px">Torch on/off</button>
+    <label for="manualCode">Or type the barcode number</label>
+    <div class="row">
+      <input id="manualCode" inputmode="numeric" autocomplete="off" placeholder="e.g. 062067000019">
+      <button id="manualGo" type="button">Look up</button>
+    </div>
+    <button id="scanClose" type="button" class="quiet" style="margin-top:14px">Close</button>
+  </div>
+</div>
+
 <datalist id="beerNames"></datalist>
 <datalist id="breweryNames"></datalist>
 <datalist id="styleNames"></datalist>
@@ -145,6 +167,7 @@ button.chip.on,button.chip.on:hover{background:var(--brass);color:var(--oak);bor
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
@@ -202,6 +225,8 @@ function bfHTML(p){
     </div>
     <label for="${p}web">Brewery website</label>
     <input id="${p}web" inputmode="url">
+    <label for="${p}barcode">Barcode</label>
+    <input id="${p}barcode" inputmode="numeric" autocomplete="off">
     <label for="${p}fam">Style family</label>
     <select id="${p}fam"><option value="">None</option>${FAMILIES.map(f => `<option>${f}</option>`).join("")}</select>
     <div class="grid2">
@@ -216,7 +241,7 @@ function fillBF(p, b){
   const set = (id, v) => { $(p + id).value = v ?? ""; };
   set("name", b.name); set("brewery", b.brewery_name); set("style", b.style); set("city", b.brewery_city);
   set("region", b.brewery_region); set("country", b.brewery_country); set("type", b.brewery_type);
-  set("web", b.brewery_website); set("fam", b.style_family); set("abv", b.abv); set("ibu", b.ibu);
+  set("web", b.brewery_website); set("barcode", b.barcode); set("fam", b.style_family); set("abv", b.abv); set("ibu", b.ibu);
   $(p + "fam").dataset.manual = b.style_family ? "1" : "";
   meta[p] = { id: b.open_brewery_db_id, lat: b.brewery_lat, lng: b.brewery_lng };
   $(p + "res").textContent = "";
@@ -230,6 +255,7 @@ function readBF(p){
     brewery_region: v("region") || null, brewery_country: v("country") || null, brewery_type: v("type") || null,
     brewery_website: web ? (/^https?:\/\//i.test(web) ? web : "https://" + web) : null,
     brewery_lat: m.lat ?? null, brewery_lng: m.lng ?? null, open_brewery_db_id: m.id || null,
+    barcode: normBarcode(v("barcode")),
     style: v("style") || null, style_family: $(p + "fam").value || null,
     abv: isNaN(abv) ? null : abv, ibu: isNaN(ibu) ? null : ibu
   };
@@ -412,6 +438,7 @@ async function openBeer(id){
   addLine(info, "ABV", beer.abv != null ? beer.abv + "%" : "");
   addLine(info, "IBU", beer.ibu != null ? String(beer.ibu) : "");
   addLine(info, "Brewery type", beer.brewery_type);
+  addLine(info, "Barcode", beer.barcode);
   if (beer.brewery_website && /^https?:\/\//i.test(beer.brewery_website)){
     const line = div("meta", "Website: "), a = document.createElement("a");
     a.href = beer.brewery_website; a.target = "_blank"; a.rel = "noopener";
@@ -529,7 +556,7 @@ $("saveBtn").addEventListener("click", async () => {
     });
     if (ck.error) throw ck.error;
 
-    fillBF("b"); $("bmore").open = false;
+    fillBF("b"); $("bmore").open = false; $("scanNote").textContent = "";
     ["serving","size","vname","vcity","notes"].forEach(id => { $(id).value = ""; });
     document.querySelectorAll("#tags .chip.on").forEach(b => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); });
     $("rating").value = 3; updateRating(); $("when").value = nowLocal();
@@ -539,6 +566,130 @@ $("saveBtn").addEventListener("click", async () => {
     setMsg($("saveMsg"), "Could not save: " + e.message, "err");
   }
   $("saveBtn").disabled = false;
+});
+
+
+/* ---------- barcode scanning and Open Food Facts lookup ---------- */
+function normBarcode(x){
+  const d = String(x || "").replace(/\D/g, "");
+  if (!d) return null;
+  return d.length < 13 ? d.padStart(13, "0") : d;
+}
+let scanner = null, torch = null, torchOn = false, handling = false;
+
+async function openScanner(){
+  $("scanner").classList.remove("hidden"); $("manualCode").value = "";
+  setMsg($("scanStatus"), "Starting camera...");
+  if (typeof Html5Qrcode === "undefined"){
+    setMsg($("scanStatus"), "The scanner library didn't load. Check your connection, or type the barcode below.", "err"); return;
+  }
+  try {
+    const F = Html5QrcodeSupportedFormats;
+    scanner = new Html5Qrcode("reader", {
+      formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E],
+      useBarCodeDetectorIfSupported: true, verbose: false
+    });
+    await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 260, height: 140 } },
+      code => onCode(code), () => {});
+    setMsg($("scanStatus"), "Centre the barcode in the frame.");
+    try {
+      const t = scanner.getRunningTrackCameraCapabilities().torchFeature();
+      if (t.isSupported()){ torch = t; torchOn = false; $("torchBtn").classList.remove("hidden"); }
+    } catch (e){}
+  } catch (e){
+    setMsg($("scanStatus"), "Couldn't start the camera (" + (e && e.message ? e.message : e) + "). Allow camera access, or type the barcode below.", "err");
+  }
+}
+async function closeScanner(){
+  try { if (scanner && scanner.isScanning) await scanner.stop(); if (scanner) scanner.clear(); } catch (e){}
+  scanner = null; torch = null;
+  $("scanner").classList.add("hidden"); $("torchBtn").classList.add("hidden");
+}
+async function onCode(code){
+  if (handling) return;
+  handling = true;
+  if (navigator.vibrate) navigator.vibrate(80);
+  await closeScanner();
+  await lookupBarcode(code);
+  handling = false;
+}
+
+function scanNote(text, code){
+  const box = $("scanNote"); box.textContent = text;
+  if (code){
+    box.appendChild(document.createTextNode(" "));
+    const a = document.createElement("a");
+    a.href = "https://world.openfoodfacts.org/product/" + code; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = "Open Food Facts page"; box.appendChild(a);
+  }
+}
+
+async function lookupBarcode(raw){
+  const code = normBarcode(raw);
+  if (!code){ scanNote("That doesn't look like a barcode number."); return; }
+  fillBF("b"); $("bbarcode").value = code;
+  const mine = beers.find(x => x.barcode === code);
+  if (mine){ fillBF("b", mine); scanNote("Found in your beers. Check the details, then save your check-in."); return; }
+  scanNote("Looking up " + code + " in Open Food Facts...");
+  try {
+    const r = await fetch("https://world.openfoodfacts.org/api/v2/product/" + code +
+      ".json?fields=product_name,brands,quantity,categories_tags,nutriments,packaging_tags");
+    const data = (r.ok || r.status === 404) ? await r.json().catch(() => null) : null;
+    if (!r.ok && r.status !== 404) throw new Error("status " + r.status);
+    if (!data || !data.product || data.status === 0){
+      scanNote("Not in Open Food Facts yet. Fill in the beer's details by hand. The barcode will be saved, so next time it's instant.");
+      $("bname").focus(); return;
+    }
+    applyOFF(code, data.product);
+  } catch (e){
+    scanNote("Couldn't reach Open Food Facts. Fill in the details by hand. The barcode will still be saved.");
+  }
+}
+
+function applyOFF(code, p){
+  const tags = p.categories_tags || [];
+  const beerish = tags.some(t => /beer|ale|lager|stout|porter|pilsner|ipa|cider|alcohol/.test(t));
+  const brand = (p.brands || "").split(",")[0].trim();
+  $("bname").value = p.product_name || "";
+  $("bbrewery").value = brand;
+
+  const generic = /^en:(beers?|alcoholic-beverages|beverages|beers-with-alcohol|fermented-beverages|fermented-drinks|alcoholic-drinks|craft-beers)$/;
+  const cands = tags.filter(t => t.startsWith("en:") && !generic.test(t) &&
+    /beer|ale|lager|stout|porter|pilsner|ipa|wheat|sour|weiss|saison|bock|helles|gose|kolsch|bitter/.test(t));
+  if (cands.length){
+    const st = cands[cands.length - 1].slice(3).replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    $("bstyle").value = st; $("bfam").value = familyOf(st);
+  }
+  const n = p.nutriments || {}, abv = parseFloat(n.alcohol_100g ?? n.alcohol ?? n.alcohol_value);
+  if (abv > 0 && abv <= 70) $("babv").value = abv;
+
+  const q = /(\d+(?:[.,]\d+)?)\s*(ml|cl|l)\b/i.exec(p.quantity || "");
+  if (q){
+    const v = parseFloat(q[1].replace(",", ".")), u = q[2].toLowerCase();
+    const ml = Math.round(u === "l" ? v * 1000 : u === "cl" ? v * 10 : v);
+    if (ml > 0 && ml < 5000){
+      const sel = $("size");
+      if (![...sel.options].some(o => o.value === String(ml))) sel.add(new Option(ml + " ml", ml));
+      sel.value = String(ml);
+    }
+  }
+  const pk = p.packaging_tags || [];
+  if (pk.some(t => /(^|[:-])can($|-)/.test(t))) $("serving").value = "Can";
+  else if (pk.some(t => /bottle/.test(t))) $("serving").value = "Bottle";
+
+  $("bmore").open = true;
+  scanNote((beerish ? "Filled from Open Food Facts. Check everything below." :
+    "Found in Open Food Facts, but it doesn't look like a beer. Check everything below.") , code);
+  if (brand) searchBrewery("b");
+}
+
+$("scanBtn").addEventListener("click", openScanner);
+$("scanClose").addEventListener("click", closeScanner);
+$("manualGo").addEventListener("click", () => { const v = $("manualCode").value; if (v.trim()) onCode(v); });
+$("manualCode").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("manualGo").click(); } });
+$("torchBtn").addEventListener("click", async () => {
+  if (!torch) return;
+  try { torchOn = !torchOn; await torch.apply(torchOn); } catch (e){ torchOn = !torchOn; }
 });
 
 db.auth.getSession().then(({ data }) => show(data.session));
