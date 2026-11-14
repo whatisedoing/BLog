@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17110d">
+<title>BeerLog</title>
+<style>
+:root{
+  --oak:#17110d; --leather:#241a13; --leather2:#2f2218; --line:#4a3826;
+  --brass:#d1a049; --claret:#8a2b3a; --claret2:#a63a4b; --parchment:#efe3cb; --muted:#a8977c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--oak);color:var(--parchment);
+  font-family:Georgia,"Palatino Linotype",Palatino,serif;line-height:1.55}
+body{padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px)}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+header{display:flex;justify-content:space-between;align-items:baseline;
+  padding:18px 0 10px;border-bottom:3px double var(--brass);margin-bottom:18px}
+h1{margin:0;font-size:1.7rem;font-style:italic;font-weight:normal;color:var(--brass)}
+h2{font-size:1.15rem;font-weight:normal;font-style:italic;margin:26px 0 10px;color:var(--brass)}
+section.card{background:var(--leather);border:1px solid var(--line);border-radius:6px;padding:16px}
+label{display:block;margin:12px 0 4px;color:var(--muted);font-size:.92rem}
+input,select,textarea{width:100%;background:var(--oak);color:var(--parchment);
+  border:1px solid var(--line);border-radius:4px;padding:10px;font:inherit;font-size:1rem}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+textarea{min-height:70px;resize:vertical}
+button{font:inherit;cursor:pointer;border-radius:4px;padding:11px 16px;border:1px solid var(--brass);
+  background:var(--claret);color:var(--parchment);width:100%;margin-top:16px;font-size:1.02rem}
+button:hover{background:var(--claret2)}
+button.quiet{background:none;color:var(--muted);border-color:var(--line);width:auto;margin:0;padding:6px 12px;font-size:.9rem}
+button:disabled{opacity:.6;cursor:wait}
+.msg{margin-top:10px;min-height:1.2em;font-size:.95rem}
+.err{color:#e88b8b}.ok{color:#a8d39a}
+.stars{font-size:1.5rem;background:linear-gradient(90deg,var(--brass) var(--p),#4a3b2c var(--p));
+  -webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+.rate{display:flex;align-items:center;gap:14px}
+.rate .num{font-size:1.4rem;min-width:3ch;color:var(--brass)}
+input[type=range]{padding:0;accent-color:var(--brass);height:32px;border:none;background:none}
+.entry{padding:12px 0;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:none}
+.entry .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.entry .name{font-size:1.05rem}
+.entry .sub,.entry .note{color:var(--muted);font-size:.9rem}
+.entry .note{font-style:italic;margin-top:2px}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>BeerLog</h1>
+    <button id="signout" class="quiet hidden">Sign out</button>
+  </header>
+
+  <!-- LOGIN -->
+  <section id="login" class="card hidden">
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username">
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn">Sign in</button>
+    <div id="loginMsg" class="msg"></div>
+  </section>
+
+  <!-- APP -->
+  <main id="app" class="hidden">
+    <h2>Log a beer</h2>
+    <section class="card">
+      <label for="name">Beer</label>
+      <input id="name" list="beerNames" autocomplete="off" placeholder="Start typing a beer you've had before">
+      <datalist id="beerNames"></datalist>
+
+      <label for="brewery">Brewery</label>
+      <input id="brewery" autocomplete="off">
+
+      <label for="style">Style</label>
+      <input id="style" autocomplete="off" placeholder="e.g. West Coast IPA">
+
+      <label for="serving">Served as</label>
+      <select id="serving">
+        <option value="">Not sure</option>
+        <option>Can</option><option>Bottle</option><option>Draft</option><option>Cask</option>
+      </select>
+
+      <label for="when">When</label>
+      <input id="when" type="datetime-local">
+
+      <label for="rating">Rating</label>
+      <div class="rate">
+        <span id="starsOut" class="stars" style="--p:60%">★★★★★</span>
+        <span id="ratingNum" class="num">3.00</span>
+      </div>
+      <input id="rating" type="range" min="0.25" max="5" step="0.25" value="3">
+
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Optional"></textarea>
+
+      <button id="saveBtn">Save check-in</button>
+      <div id="saveMsg" class="msg"></div>
+    </section>
+
+    <h2>Recent check-ins</h2>
+    <section class="card" id="recent"></section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ====== PASTE YOUR TWO VALUES HERE (Supabase > Project Settings > API) ======
+const SUPABASE_URL = "PASTE_PROJECT_URL_HERE";
+const SUPABASE_KEY = "PASTE_ANON_PUBLIC_KEY_HERE";
+// ===========================================================================
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+let beers = [];
+
+function setMsg(el, text, cls){ el.textContent = text; el.className = "msg " + (cls || ""); }
+function nowLocal(){
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+function starsEl(r){
+  const s = document.createElement("span");
+  s.className = "stars"; s.textContent = "★★★★★";
+  s.style.setProperty("--p", (r / 5 * 100) + "%");
+  s.style.fontSize = "1.15rem";
+  s.setAttribute("aria-label", r + " out of 5");
+  return s;
+}
+
+// ---- rating slider ----
+function updateRating(){
+  const r = parseFloat($("rating").value);
+  $("ratingNum").textContent = r.toFixed(2);
+  $("starsOut").style.setProperty("--p", (r / 5 * 100) + "%");
+}
+$("rating").addEventListener("input", updateRating);
+
+// ---- show login or app ----
+function show(session){
+  $("login").classList.toggle("hidden", !!session);
+  $("app").classList.toggle("hidden", !session);
+  $("signout").classList.toggle("hidden", !session);
+  if (session){ $("when").value = nowLocal(); updateRating(); load(); }
+}
+
+// ---- login / logout ----
+$("loginBtn").addEventListener("click", async () => {
+  setMsg($("loginMsg"), "Signing in...");
+  const { error } = await db.auth.signInWithPassword({
+    email: $("email").value.trim(), password: $("password").value
+  });
+  if (error) setMsg($("loginMsg"), "Sign-in failed: " + error.message, "err");
+});
+$("signout").addEventListener("click", () => db.auth.signOut());
+
+// ---- load beers and recent check-ins ----
+async function load(){
+  const b = await db.from("beers").select("*").order("name");
+  if (b.error){ setMsg($("saveMsg"), "Could not load beers: " + b.error.message, "err"); return; }
+  beers = b.data;
+  const list = $("beerNames"); list.innerHTML = "";
+  beers.forEach(x => { const o = document.createElement("option"); o.value = x.name; list.appendChild(o); });
+
+  const c = await db.from("checkins")
+    .select("id, rating, serving_style, notes, checked_in_at, beers(name, brewery_name)")
+    .order("checked_in_at", { ascending: false }).limit(20);
+  const box = $("recent"); box.innerHTML = "";
+  if (c.error){ setMsg($("saveMsg"), "Could not load check-ins: " + c.error.message, "err"); return; }
+  if (!c.data.length){
+    const e = document.createElement("div"); e.className = "empty";
+    e.textContent = "Nothing logged yet. Your first check-in will appear here.";
+    box.appendChild(e); return;
+  }
+  c.data.forEach(ci => {
+    const row = document.createElement("div"); row.className = "entry";
+    const top = document.createElement("div"); top.className = "top";
+    const nm = document.createElement("span"); nm.className = "name"; nm.textContent = ci.beers.name;
+    top.appendChild(nm);
+    if (ci.rating != null) top.appendChild(starsEl(parseFloat(ci.rating)));
+    const sub = document.createElement("div"); sub.className = "sub";
+    const when = new Date(ci.checked_in_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    sub.textContent = [ci.beers.brewery_name, ci.serving_style, when,
+      ci.rating != null ? parseFloat(ci.rating).toFixed(2) : null].filter(Boolean).join(", ");
+    row.appendChild(top); row.appendChild(sub);
+    if (ci.notes){ const n = document.createElement("div"); n.className = "note"; n.textContent = ci.notes; row.appendChild(n); }
+    box.appendChild(row);
+  });
+}
+
+// ---- pick an existing beer: fill in its brewery and style ----
+$("name").addEventListener("change", () => {
+  const n = $("name").value.trim().toLowerCase();
+  const found = beers.find(x => x.name.toLowerCase() === n);
+  if (found){ $("brewery").value = found.brewery_name || ""; $("style").value = found.style || ""; }
+});
+
+// ---- save a check-in ----
+$("saveBtn").addEventListener("click", async () => {
+  const name = $("name").value.trim();
+  const brewery = $("brewery").value.trim();
+  const style = $("style").value.trim();
+  if (!name){ setMsg($("saveMsg"), "Enter the beer's name first.", "err"); return; }
+
+  $("saveBtn").disabled = true; setMsg($("saveMsg"), "Saving...");
+  try {
+    let beer = beers.find(x => x.name.toLowerCase() === name.toLowerCase() &&
+      (x.brewery_name || "").toLowerCase() === brewery.toLowerCase());
+    if (!beer){
+      const r = await db.from("beers")
+        .insert({ name, brewery_name: brewery || null, style: style || null }).select().single();
+      if (r.error) throw r.error;
+      beer = r.data;
+    }
+    const when = $("when").value ? new Date($("when").value).toISOString() : new Date().toISOString();
+    const ck = await db.from("checkins").insert({
+      beer_id: beer.id,
+      rating: parseFloat($("rating").value),
+      serving_style: $("serving").value || null,
+      notes: $("notes").value.trim() || null,
+      checked_in_at: when
+    });
+    if (ck.error) throw ck.error;
+
+    ["name","brewery","style","notes"].forEach(id => $(id).value = "");
+    $("serving").value = ""; $("rating").value = 3; updateRating(); $("when").value = nowLocal();
+    setMsg($("saveMsg"), "Check-in saved.", "ok");
+    await load();
+  } catch (e) {
+    setMsg($("saveMsg"), "Could not save: " + e.message, "err");
+  }
+  $("saveBtn").disabled = false;
+});
+
+// ---- start ----
+db.auth.getSession().then(({ data }) => show(data.session));
+db.auth.onAuthStateChange((_evt, session) => show(session));
+</script>
+</body>
+</html>
