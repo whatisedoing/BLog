@@ -85,6 +85,9 @@ button.tab.on,button.tab.on:hover{background:var(--brass);color:var(--oak);borde
 .row{display:flex;gap:10px;align-items:stretch}
 .row button{width:auto;margin-top:0;white-space:nowrap}
 button.scan{margin-top:0}
+.ph{display:block;width:100%;max-height:280px;object-fit:cover;border-radius:4px;border:1px solid var(--line);margin-top:8px;cursor:zoom-in;background:var(--oak)}
+.phprev{display:flex;gap:12px;align-items:center;margin-top:8px}
+.phprev img{width:84px;height:84px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
 .hidden{display:none}
 </style>
 </head>
@@ -139,6 +142,10 @@ button.scan{margin-top:0}
 
       <label for="notes">Notes</label>
       <textarea id="notes" placeholder="Optional"></textarea>
+
+      <label for="photo">Photo</label>
+      <input id="photo" type="file" accept="image/*">
+      <div id="photoPrev" class="phprev hidden"><img id="photoImg" alt="Photo to attach"><button id="photoClear" type="button" class="quiet">Remove photo</button></div>
 
       <button id="saveBtn">Save check-in</button>
       <div id="saveMsg" class="msg"></div>
@@ -655,9 +662,47 @@ function setView(v){
 $("bf").innerHTML = bfHTML("b"); $("ebf").innerHTML = bfHTML("e");
 wireBF("b"); wireBF("e"); buildServing(); renderFlav(); attachAll();
 
+/* ---------- photos ---------- */
+var photoBlob = null, currentUserId = null;
+async function shrink(blob, maxEdge, quality){
+  maxEdge = maxEdge || 1600; quality = quality || 0.82;
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image(); img.src = url; await img.decode();
+    const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(img.naturalWidth * scale)); cv.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const ctx = cv.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    const out = await new Promise(res => cv.toBlob(res, "image/jpeg", quality));
+    if (!out) throw new Error("couldn't convert the image");
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
+function clearPhoto(){
+  photoBlob = null; $("photo").value = ""; $("photoPrev").classList.add("hidden");
+}
+$("photo").addEventListener("change", async () => {
+  const f = $("photo").files && $("photo").files[0];
+  if (!f){ clearPhoto(); return; }
+  setMsg($("saveMsg"), "Preparing photo...");
+  try {
+    photoBlob = await shrink(f);
+    $("photoImg").src = URL.createObjectURL(photoBlob); $("photoPrev").classList.remove("hidden");
+    setMsg($("saveMsg"), "");
+  } catch (e){ clearPhoto(); setMsg($("saveMsg"), "Couldn't use that photo: " + e.message, "err"); }
+});
+$("photoClear").addEventListener("click", clearPhoto);
+function openPhoto(src){
+  const m = document.createElement("div"); m.className = "modal"; m.style.alignItems = "center"; m.style.cursor = "zoom-out";
+  const im = document.createElement("img"); im.src = src; im.alt = "Photo";
+  im.style.cssText = "max-width:100%;max-height:92vh;border-radius:4px;margin:auto";
+  m.appendChild(im); m.addEventListener("click", () => m.remove()); document.body.appendChild(m);
+}
+
 /* ---------- show login or app ---------- */
 function show(session){
-  const was = signedIn; signedIn = !!session;
+  const was = signedIn; signedIn = !!session; currentUserId = session && session.user ? session.user.id : null;
   $("login").classList.toggle("hidden", signedIn);
   $("signout").classList.toggle("hidden", !signedIn);
   if (!signedIn){ ["app", "detail", "badges", "nav"].forEach(id => $(id).classList.add("hidden")); currentBeerId = null; return; }
@@ -760,7 +805,7 @@ async function openBeer(id){
   $("dCount").textContent = "Loading..."; $("dTags").textContent = ""; $("dList").innerHTML = "";
 
   const c = await db.from("checkins")
-    .select("id, rating, serving_style, venue_name, venue_city, flavour_tags, notes, checked_in_at")
+    .select("id, rating, serving_style, venue_name, venue_city, flavour_tags, notes, photo_url, checked_in_at")
     .eq("beer_id", id).order("checked_in_at", { ascending: false });
   if (currentBeerId !== id) return;
   if (c.error){ $("dCount").textContent = "Could not load: " + c.error.message; return; }
@@ -777,6 +822,14 @@ async function openBeer(id){
   const top = Object.entries(tally).sort((x, y) => y[1] - x[1]).slice(0, 8);
   if (top.length) $("dTags").textContent = "Flavours you've noted: " + top.map(([t, n]) => t + " (" + n + ")").join(", ");
 
+  const photoUrls = {};
+  const paths = rows.map(r => r.photo_url).filter(Boolean);
+  if (paths.length){
+    const su = await db.storage.from("photos").createSignedUrls(paths, 3600);
+    if (!su.error) (su.data || []).forEach(x => { if (x.signedUrl && x.path) photoUrls[x.path] = x.signedUrl; });
+    if (currentBeerId !== id) return;
+  }
+
   if (!rows.length) $("dList").appendChild(div("empty", "No check-ins for this beer."));
   rows.forEach(ci => {
     const row = div("entry"), head = div("top");
@@ -788,12 +841,17 @@ async function openBeer(id){
       ci.rating != null ? parseFloat(ci.rating).toFixed(2) : "Not rated"].filter(Boolean).join(", ")));
     if (ci.flavour_tags && ci.flavour_tags.length) row.appendChild(div("sub", ci.flavour_tags.join(", ")));
     if (ci.notes) row.appendChild(div("note", ci.notes));
+    if (ci.photo_url && photoUrls[ci.photo_url]){
+      const im = document.createElement("img"); im.className = "ph"; im.loading = "lazy"; im.alt = "Photo from this check-in";
+      im.src = photoUrls[ci.photo_url]; im.addEventListener("click", () => openPhoto(im.src)); row.appendChild(im);
+    }
     const del = document.createElement("button");
     del.className = "quiet"; del.textContent = "Delete"; del.style.marginTop = "6px";
     del.addEventListener("click", async () => {
       if (!confirm("Delete this check-in?")) return;
       const r = await db.from("checkins").delete().eq("id", ci.id);
       if (r.error){ alert("Could not delete: " + r.error.message); return; }
+      if (ci.photo_url) await db.storage.from("photos").remove([ci.photo_url]);
       await load(); openBeer(id);
     });
     row.appendChild(del);
@@ -856,8 +914,15 @@ $("saveBtn").addEventListener("click", async () => {
       }
     }
     const when = $("when").value ? new Date($("when").value).toISOString() : new Date().toISOString();
+    const ckId = crypto.randomUUID();
+    let photoPath = null;
+    if (photoBlob){
+      photoPath = currentUserId + "/" + ckId + ".jpg";
+      const up = await db.storage.from("photos").upload(photoPath, photoBlob, { contentType: "image/jpeg" });
+      if (up.error) throw new Error("photo upload failed (" + up.error.message + ")");
+    }
     const ck = await db.from("checkins").insert({
-      beer_id: beer.id,
+      id: ckId, beer_id: beer.id, photo_url: photoPath,
       rating: parseFloat($("rating").value),
       serving_style: getServing() || null,
       venue_name: $("vname").value.trim() || null,
@@ -866,11 +931,11 @@ $("saveBtn").addEventListener("click", async () => {
       notes: $("notes").value.trim() || null,
       checked_in_at: when
     });
-    if (ck.error) throw ck.error;
+    if (ck.error){ if (photoPath) await db.storage.from("photos").remove([photoPath]); throw ck.error; }
 
     fillBF("b"); $("bmore").open = false; $("scanNote").textContent = "";
     ["vname","vcity","notes"].forEach(id => { $(id).value = ""; });
-    setServing(""); selFlav.clear(); $("flavSearch").value = ""; renderFlav();
+    clearPhoto(); setServing(""); selFlav.clear(); $("flavSearch").value = ""; renderFlav();
     $("rating").value = 3; updateRating(); $("when").value = nowLocal();
     await load();
     const gained = newBadgeNames(before);
