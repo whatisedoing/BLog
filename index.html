@@ -100,6 +100,7 @@ button.scan{margin-top:0}
   <nav id="nav" class="tabs hidden">
     <button class="tab quiet" data-view="app">Log</button>
     <button class="tab quiet" data-view="badges">Badges</button>
+    <button class="tab quiet" data-view="stats">Stats</button>
   </nav>
 
   <section id="login" class="card hidden">
@@ -177,6 +178,12 @@ button.scan{margin-top:0}
     <section class="card" id="dList"></section>
   </section>
 
+  <section id="stats" class="hidden">
+    <h2 style="margin-top:0">Statistics</h2>
+    <div id="stTabs" class="tabs" style="margin-top:0"><button class="tab quiet on" data-st="overview">Overview</button><button class="tab quiet" data-st="top">Top rated</button><button class="tab quiet" data-st="year">Year in review</button></div>
+    <div id="stBody"></div>
+  </section>
+
   <section id="badges" class="hidden">
     <h2>Badges</h2>
     <div id="scopeTabs" class="tabs" style="margin-top:0"><button class="tab quiet on" data-scope="all">All time</button><button class="tab quiet" data-scope="since">Since BeerLog</button></div>
@@ -206,7 +213,7 @@ button.scan{margin-top:0}
 <script>
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-let beers = [], stats = {}, venues = {}, signedIn = false, currentBeerId = null;
+let beers = [], stats = {}, venues = {}, signedIn = false, currentBeerId = null, detailFrom = "app";
 const meta = { b: {}, e: {} }, seq = { b: 0, e: 0 }, timers = {};
 
 const STYLES = ["IPA","West Coast IPA","Hazy IPA","Double IPA","Session IPA","Pale Ale","American Pale Ale","Amber Ale","Red Ale","Brown Ale","Blonde Ale","Golden Ale","Cream Ale","Kolsch","Pilsner","Czech Pilsner","Lager","Helles","Dunkel","Marzen","Bock","Stout","Imperial Stout","Milk Stout","Porter","Wheat Beer","Hefeweizen","Witbier","Saison","Belgian Tripel","Belgian Dubbel","Belgian Strong Ale","Sour","Gose","Berliner Weisse","Fruited Sour","Barleywine","Scotch Ale","Cider"];
@@ -651,11 +658,12 @@ function renderBadges(){
 
 /* ---------- views ---------- */
 function setView(v){
-  ["app", "detail", "badges"].forEach(id => $(id).classList.toggle("hidden", id !== v));
+  ["app", "detail", "badges", "stats"].forEach(id => $(id).classList.toggle("hidden", id !== v));
   $("nav").classList.remove("hidden");
-  const tab = v === "detail" ? "app" : v;
+  const tab = v === "detail" ? detailFrom : v;
   document.querySelectorAll("#nav .tab").forEach(b => b.classList.toggle("on", b.dataset.view === tab));
   if (v === "badges") renderBadges();
+  if (v === "stats" && window.renderStats) renderStats();
 }
 
 /* ---------- start-up wiring ---------- */
@@ -705,7 +713,7 @@ function show(session){
   const was = signedIn; signedIn = !!session; currentUserId = session && session.user ? session.user.id : null;
   $("login").classList.toggle("hidden", signedIn);
   $("signout").classList.toggle("hidden", !signedIn);
-  if (!signedIn){ ["app", "detail", "badges", "nav"].forEach(id => $(id).classList.add("hidden")); currentBeerId = null; return; }
+  if (!signedIn){ ["app", "detail", "badges", "stats", "nav"].forEach(id => $(id).classList.add("hidden")); currentBeerId = null; return; }
   if (!was) showApp();
 }
 function showApp(){
@@ -781,9 +789,9 @@ function renderBeerList(){
 /* ---------- the beer page ---------- */
 function addLine(parent, label, text){ if (text) parent.appendChild(div("meta", label + ": " + text)); }
 
-async function openBeer(id){
+async function openBeer(id, from){
   const beer = beers.find(x => x.id === id); if (!beer) return;
-  currentBeerId = id;
+  currentBeerId = id; detailFrom = from || "app";
   setView("detail"); $("editBox").classList.add("hidden");
   window.scrollTo(0, 0);
   $("dName").textContent = beer.name;
@@ -852,13 +860,16 @@ async function openBeer(id){
       const r = await db.from("checkins").delete().eq("id", ci.id);
       if (r.error){ alert("Could not delete: " + r.error.message); return; }
       if (ci.photo_url) await db.storage.from("photos").remove([ci.photo_url]);
-      await load(); openBeer(id);
+      const from = detailFrom; await load(); openBeer(id, from);
     });
     row.appendChild(del);
     $("dList").appendChild(row);
   });
 }
-$("backBtn").addEventListener("click", showApp);
+$("backBtn").addEventListener("click", () => {
+  if (detailFrom === "stats"){ currentBeerId = null; setView("stats"); window.scrollTo(0, window.statsScroll || 0); }
+  else showApp();
+});
 $("logAgain").addEventListener("click", () => {
   const b = beers.find(x => x.id === currentBeerId);
   showApp(); if (b) fillBF("b", b);
@@ -876,7 +887,7 @@ $("editSave").addEventListener("click", async () => {
   const r = await db.from("beers").update(f).eq("id", currentBeerId);
   $("editSave").disabled = false;
   if (r.error){ setMsg($("editMsg"), "Could not save: " + r.error.message, "err"); return; }
-  const id = currentBeerId; await load(); openBeer(id);
+  const id = currentBeerId, from = detailFrom; await load(); openBeer(id, from);
 });
 
 /* ---------- log form: pick an existing beer or venue ---------- */
@@ -1073,11 +1084,12 @@ $("scopeTabs").addEventListener("click", e => {
 });
 $("nav").addEventListener("click", e => {
   const t = e.target.closest(".tab"); if (!t) return;
-  if (t.dataset.view === "app") showApp(); else { currentBeerId = null; setView("badges"); window.scrollTo(0, 0); }
+  if (t.dataset.view === "app") showApp(); else { currentBeerId = null; setView(t.dataset.view); window.scrollTo(0, 0); }
 });
 
 db.auth.getSession().then(({ data }) => show(data.session));
 db.auth.onAuthStateChange((_evt, session) => show(session));
 </script>
+<script src="stats.js"></script>
 </body>
 </html>
