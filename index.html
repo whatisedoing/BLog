@@ -62,11 +62,11 @@ button.opt{display:block;width:100%;text-align:left;margin:0;border:none;border-
 button.opt:last-child{border-bottom:none}
 button.opt:hover{background:var(--leather2)}
 button.opt small{display:block;color:var(--muted);font-size:.8rem}
-.seg{display:flex;gap:8px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 button.sv{flex:1;margin:0;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--oak);border-color:var(--line);color:var(--muted);font-size:.78rem;border-radius:6px}
 button.sv:hover{background:var(--leather2)}
 button.sv svg{fill:currentColor}
-button.sv .ic{display:flex;align-items:center;height:28px}
+button.sv .ic{display:flex;align-items:center;height:34px}
 button.sv.on,button.sv.on:hover{background:var(--brass);color:var(--oak);border-color:var(--brass)}
 .tabs{display:flex;gap:8px;margin:-6px 0 14px}
 button.tab{flex:1;margin:0;padding:8px;font-size:.95rem}
@@ -117,8 +117,6 @@ button.scan{margin-top:0}
 
       <div class="lbl">Served as</div>
       <div id="serving" class="seg"></div>
-      <label for="size">Size</label>
-      <select id="size"></select>
 
       <label for="vname">Where</label>
       <input id="vname" autocomplete="off" placeholder="Bar, restaurant, or home">
@@ -174,6 +172,7 @@ button.scan{margin-top:0}
 
   <section id="badges" class="hidden">
     <h2>Badges</h2>
+    <div id="scopeTabs" class="tabs" style="margin-top:0"><button class="tab quiet on" data-scope="all">All time</button><button class="tab quiet" data-scope="since">Since BeerLog</button></div>
     <div id="badgeSummary" class="meta"></div>
     <div id="badgeList"></div>
   </section>
@@ -206,14 +205,13 @@ const meta = { b: {}, e: {} }, seq = { b: 0, e: 0 }, timers = {};
 const STYLES = ["IPA","West Coast IPA","Hazy IPA","Double IPA","Session IPA","Pale Ale","American Pale Ale","Amber Ale","Red Ale","Brown Ale","Blonde Ale","Golden Ale","Cream Ale","Kolsch","Pilsner","Czech Pilsner","Lager","Helles","Dunkel","Marzen","Bock","Stout","Imperial Stout","Milk Stout","Porter","Wheat Beer","Hefeweizen","Witbier","Saison","Belgian Tripel","Belgian Dubbel","Belgian Strong Ale","Sour","Gose","Berliner Weisse","Fruited Sour","Barleywine","Scotch Ale","Cider"];
 const FAMILIES = ["IPA","Pale Ale","Stout & Porter","Lager","Pilsner","Sour","Wheat","Belgian & Farmhouse","Amber & Red","Brown Ale","Blonde & Golden","Strong Ale","Other"];
 const FLAVOURS = ["Hoppy","Citrus","Tropical","Piney","Floral","Malty","Caramel","Roasty","Chocolate","Coffee","Fruity","Sour","Funky","Spicy","Smoky","Bready","Honey","Crisp","Smooth","Bitter","Sweet","Dry","Light","Rich"];
-const SIZES = [[118,"118 ml (taster)"],[355,"355 ml (standard can)"],[473,"473 ml (tall can)"],[341,"341 ml (bottle)"],[330,"330 ml"],[440,"440 ml"],[500,"500 ml"],[568,"568 ml (pint)"],[750,"750 ml"]];
 
 function familyOf(st){
   const s = st.toLowerCase();
   const rules = [[/ipa|india pale/,"IPA"],[/pale ale/,"Pale Ale"],[/stout|porter/,"Stout & Porter"],[/pilsner|pils\b/,"Pilsner"],
     [/sour|gose|berliner|lambic|gueuze|wild ale/,"Sour"],[/wheat|weizen|weiss|witbier|\bwit\b/,"Wheat"],
     [/belgian|saison|tripel|dubbel|quad|farmhouse|biere de garde/,"Belgian & Farmhouse"],
-    [/lager|helles|bock|dunkel|m[aä]rzen|vienna|schwarz|kellerbier|zwickel/,"Lager"],
+    [/lager|helles|bock|dunkel|m[aä]rzen|vienna|schwarz|kellerbier|zwickel|california common/,"Lager"],
     [/amber|red ale|irish red/,"Amber & Red"],[/brown|\bmild\b/,"Brown Ale"],
     [/blonde|golden|k[oö]lsch|cream ale/,"Blonde & Golden"],[/barley ?wine|strong|scotch ale|wee heavy|old ale/,"Strong Ale"]];
   for (const [re, f] of rules) if (re.test(s)) return f;
@@ -429,7 +427,10 @@ function beerMatches(q){
   }).filter(Boolean).sort((a, b) => a.score - b.score || a.beer.name.localeCompare(b.beer.name))
     .map(x => ({ label: x.beer.name, sub: x.beer.brewery_name || "", beer: x.beer }));
 }
-function styleMatches(q){ return STYLES.filter(x => x.toLowerCase().includes(q)).map(x => ({ label: x })); }
+function styleMatches(q){
+  const all = [...new Set([...STYLES, ...beers.map(b => b.style).filter(Boolean)])];
+  return all.filter(x => x.toLowerCase().includes(q)).sort((a, b) => (a.toLowerCase().startsWith(q) ? 0 : 1) - (b.toLowerCase().startsWith(q) ? 0 : 1) || a.localeCompare(b)).map(x => ({ label: x }));
+}
 function attachAll(){
   attachSuggest($("bname"), beerMatches, it => fillBF("b", it.beer));
   ["b", "e"].forEach(p => attachSuggest($(p + "style"), styleMatches, it => {
@@ -448,12 +449,7 @@ function attachAll(){
 }
 
 /* ---------- serving style icons ---------- */
-const SERVINGS = [["Can", "mdiCylinder", 20], ["King Can", "mdiCylinder", 27], ["Bottle", "mdiBottleSoda", 24], ["Tap", "mdiFaucet", 24], ["Taster", "mdiGlassTulip", 24]];
-const AUTO_ML = { "Can": 355, "King Can": 473, "Bottle": 341, "Tap": 473, "Taster": 118 };
-function ensureSize(ml){
-  const sel = $("size");
-  if (![...sel.options].some(o => o.value === String(ml))) sel.add(new Option(ml + " ml", ml));
-}
+const SERVINGS = [["Can", "mdiCylinder", 20], ["King Can", "mdiCylinder", 27], ["Crowler", "mdiCylinder", 34], ["Bottle", "mdiBottleSoda", 24], ["Draft", "mdiFaucet", 24], ["Taster", "mdiGlassTulip", 24]];
 function buildServing(){
   SERVINGS.forEach(([v, icon, size]) => {
     const b = document.createElement("button");
@@ -462,16 +458,11 @@ function buildServing(){
     b.addEventListener("click", () => setServing(b.classList.contains("on") ? "" : v));
     $("serving").appendChild(b);
   });
-  $("size").addEventListener("change", () => { $("size").dataset.auto = ""; });
 }
 function setServing(v){
   document.querySelectorAll("#serving .sv").forEach(b => {
     const on = b.dataset.v === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false");
   });
-  if (v && AUTO_ML[v]){
-    const sel = $("size");
-    if (!sel.value || sel.dataset.auto === "1"){ ensureSize(AUTO_ML[v]); sel.value = String(AUTO_ML[v]); sel.dataset.auto = "1"; }
-  }
 }
 function getServing(){ const b = document.querySelector("#serving .sv.on"); return b ? b.dataset.v : ""; }
 
@@ -545,39 +536,56 @@ async function fetchAllCheckins(){
 }
 
 /* ---------- badges ---------- */
-const TIER_COLORS = ["#b07a45", "#b9bec6", "#d1a049", "#7fc4b0", "#8fb4e8", "#c58bd6"];
+const TIER_COLORS = ["#b07a45", "#b9bec6", "#d1a049", "#7fc4b0", "#8fb4e8", "#c58bd6", "#e08f9d", "#e6a06a", "#9ad17a", "#e8d27a", "#f2efe6", "#ffffff"];
 const BADGES = [];
 function addBadge(group, id, name, icon, tiers, unit, key){ BADGES.push({ group, id, name, icon, tiers, unit, key }); }
 const nz = x => (x || "").trim().toLowerCase();
-const SERVE_MAP = { "Can": "Can", "King Can": "King Can", "Bottle": "Bottle", "Tap": "Tap", "Draft": "Tap", "Taster": "Taster" };
+const SERVE_MAP = { "Can": "Can", "King Can": "King Can", "Crowler": "Crowler", "Bottle": "Bottle", "Draft": "Draft", "Tap": "Draft", "Taster": "Taster" };
 
-addBadge("Volume", "checkins", "Regular", "mdiBeer", [10, 25, 50, 100, 250, 500], "check-ins", c => c.id);
-addBadge("Volume", "beers", "Taste Tester", "mdiGlassTulip", [10, 25, 50, 100, 250], "different beers", c => c.beer_id);
-[["Can", "Can Collector", "mdiCylinder"], ["King Can", "King of Cans", "mdiCylinder"], ["Bottle", "Bottle Opener", "mdiBottleSoda"],
- ["Tap", "On Tap", "mdiFaucet"], ["Taster", "Flight Taster", "mdiGlassTulip"]].forEach(([sv, nm, ic]) =>
-  addBadge("Serving style", "serve-" + sv, nm, ic, [10, 25, 50, 100], "drinks served as " + sv.toLowerCase(),
+const L_CHECKINS = [10, 25, 50, 100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000];
+const L_BEERS = [10, 25, 50, 100, 250, 500, 750, 1000, 1500, 2000];
+const L_SERVE = [10, 25, 50, 100, 250, 500, 1000, 2000];
+const L_SERVE_SMALL = [10, 25, 50, 100, 250, 500];
+const L_CROWLER = [5, 10, 25, 50, 100, 250];
+const L_STYLE = [10, 25, 50, 100, 250, 500];
+const L_STYLES = [5, 10, 20, 30, 50, 75, 100];
+const L_BREW = [10, 25, 50, 100, 150, 250, 500];
+const L_COUNTRY = [3, 5, 10, 20, 30, 50];
+const L_REGION = [3, 5, 10, 20, 30, 50, 75, 100];
+const L_MB = [5, 10, 20, 30, 50, 75, 100];
+const L_VENUE = [10, 25, 50, 100, 150, 250, 500];
+
+addBadge("Volume", "checkins", "Regular", "mdiBeer", L_CHECKINS, "check-ins", c => c.id);
+addBadge("Volume", "beers", "Taste Tester", "mdiGlassTulip", L_BEERS, "different beers", c => c.beer_id);
+[["Can", "Can Collector", "mdiCylinder", L_SERVE], ["King Can", "King of Cans", "mdiCylinder", L_SERVE_SMALL],
+ ["Crowler", "Crowler Crew", "mdiCylinder", L_CROWLER], ["Bottle", "Bottle Opener", "mdiBottleSoda", L_SERVE_SMALL],
+ ["Draft", "Draft Pick", "mdiFaucet", L_SERVE], ["Taster", "Flight Taster", "mdiGlassTulip", L_SERVE_SMALL]].forEach(([sv, nm, ic, lv]) =>
+  addBadge("Serving style", "serve-" + sv, nm, ic, lv, "drinks served as " + sv.toLowerCase(),
     c => SERVE_MAP[c.serving_style] === sv ? c.id : null));
 [["IPA", "Hop Head", "mdiHops"], ["Pale Ale", "Pale Ale Pal", "mdiBeer"], ["Stout & Porter", "Dark Side", "mdiGlassMug"],
  ["Lager", "Lager Lover", "mdiBeer"], ["Pilsner", "Pils Pro", "mdiGlassTulip"], ["Sour", "Pucker Up", "mdiGlassTulip"],
  ["Wheat", "Wheat Whisperer", "mdiBarley"], ["Belgian & Farmhouse", "Farmhouse Friend", "mdiBarley"],
  ["Amber & Red", "Amber Hour", "mdiBeer"], ["Brown Ale", "Brown Study", "mdiGlassMug"],
  ["Blonde & Golden", "Golden Hour", "mdiBeer"], ["Strong Ale", "Heavy Hitter", "mdiGlassMug"]].forEach(([fam, nm, ic]) =>
-  addBadge("Beer styles", "style-" + fam, nm, ic, [10, 25, 50, 100], "different " + fam + " beers",
+  addBadge("Beer styles", "style-" + fam, nm, ic, L_STYLE, "different " + fam + " beers",
     (c, b) => b.style_family === fam ? c.beer_id : null));
-addBadge("Exploring", "styles", "Style Explorer", "mdiCompass", [5, 10, 20, 30], "different styles", (c, b) => nz(b.style) || null);
-addBadge("Exploring", "breweries", "Brewery Hopper", "mdiFactory", [10, 25, 50, 100], "different breweries", (c, b) => nz(b.brewery_name) || null);
-addBadge("Exploring", "countries", "Globetrotter", "mdiEarth", [3, 5, 10, 20], "countries", (c, b) => nz(b.brewery_country) || null);
-addBadge("Exploring", "regions", "Region Roamer", "mdiMapMarker", [3, 5, 10, 20], "provinces or states",
+addBadge("Exploring", "styles", "Style Explorer", "mdiCompass", L_STYLES, "different styles", (c, b) => nz(b.style) || null);
+addBadge("Exploring", "breweries", "Brewery Hopper", "mdiFactory", L_BREW, "different breweries", (c, b) => nz(b.brewery_name) || null);
+addBadge("Exploring", "countries", "Globetrotter", "mdiEarth", L_COUNTRY, "countries", (c, b) => nz(b.brewery_country) || null);
+addBadge("Exploring", "regions", "Region Roamer", "mdiMapMarker", L_REGION, "provinces or states",
   (c, b) => nz(b.brewery_region) ? nz(b.brewery_country) + "|" + nz(b.brewery_region) : null);
-addBadge("Exploring", "manitoba", "Manitoba Made", "mdiLeafMaple", [5, 10, 20, 30], "Manitoba breweries",
+addBadge("Exploring", "manitoba", "Manitoba Made", "mdiLeafMaple", L_MB, "Manitoba breweries",
   (c, b) => /^(manitoba|mb)$/i.test((b.brewery_region || "").trim()) ? nz(b.brewery_name) || null : null);
-addBadge("Exploring", "venues", "Barfly", "mdiStorefront", [10, 25, 50], "different venues", c => nz(c.venue_name) || null);
-addBadge("Rating", "five", "Five-Star Find", "mdiStar", [1, 10, 25], "five-star beers", c => c.rating != null && parseFloat(c.rating) >= 5 ? c.beer_id : null);
-addBadge("Rating", "critic", "Tough Critic", "mdiMedal", [10, 25], "beers rated below 2 stars", c => c.rating != null && parseFloat(c.rating) < 2 ? c.beer_id : null);
+addBadge("Exploring", "venues", "Barfly", "mdiStorefront", L_VENUE, "different venues", c => nz(c.venue_name) || null);
+addBadge("Rating", "five", "Five-Star Find", "mdiStar", [1, 10, 25, 50, 100], "five-star beers", c => c.rating != null && parseFloat(c.rating) >= 5 ? c.beer_id : null);
+addBadge("Rating", "critic", "Tough Critic", "mdiMedal", [10, 25, 50, 100], "beers rated below 2 stars", c => c.rating != null && parseFloat(c.rating) < 2 ? c.beer_id : null);
 
-function computeBadges(){
+const BEERLOG_START = new Date(2026, 10, 13);   // local midnight, 13 Nov 2026: the "Since BeerLog" badges count from here
+let badgeScope = "all";
+function computeBadges(scope){
   const byId = {}; beers.forEach(b => { byId[b.id] = b; });
-  const cks = [...allCk].sort((a, b) => a.checked_in_at < b.checked_in_at ? -1 : a.checked_in_at > b.checked_in_at ? 1 : 0);
+  let cks = [...allCk].sort((a, b) => a.checked_in_at < b.checked_in_at ? -1 : a.checked_in_at > b.checked_in_at ? 1 : 0);
+  if (scope === "since") cks = cks.filter(c => new Date(c.checked_in_at) >= BEERLOG_START);
   return BADGES.map(bd => {
     const seen = new Set(), dates = [];
     cks.forEach(c => {
@@ -590,12 +598,14 @@ function computeBadges(){
 }
 function earnedKeys(){
   const out = new Set();
-  computeBadges().forEach(b => { for (let i = 1; i <= b.level; i++) out.add(b.id + ":" + i); });
+  ["all", "since"].forEach(sc => computeBadges(sc).forEach(b => { for (let i = 1; i <= b.level; i++) out.add(sc + ":" + b.id + ":" + i); }));
   return out;
 }
 function newBadgeNames(before){
   const out = [];
-  computeBadges().forEach(b => { for (let i = 1; i <= b.level; i++) if (!before.has(b.id + ":" + i)) out.push(b.name + " level " + i); });
+  ["all", "since"].forEach(sc => computeBadges(sc).forEach(b => {
+    for (let i = 1; i <= b.level; i++) if (!before.has(sc + ":" + b.id + ":" + i)) out.push((sc === "since" ? "BeerLog " : "") + b.name + " level " + i);
+  }));
   return out;
 }
 function badgeRow(b){
@@ -619,9 +629,11 @@ function badgeRow(b){
 }
 function renderBadges(){
   const list = $("badgeList"); list.innerHTML = "";
-  const res = computeBadges();
+  document.querySelectorAll("#scopeTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.scope === badgeScope));
+  const res = computeBadges(badgeScope);
   const total = res.reduce((t, b) => t + b.tiers.length, 0), got = res.reduce((t, b) => t + b.level, 0);
-  $("badgeSummary").textContent = got + " of " + total + " badge levels earned";
+  $("badgeSummary").textContent = got + " of " + total + " badge levels earned" +
+    (badgeScope === "since" ? ". Counts only check-ins from " + fmtDate(BEERLOG_START.toISOString()) + " onward." : ".");
   [...new Set(res.map(b => b.group))].forEach(g => {
     const h = document.createElement("h2"); h.textContent = g; list.appendChild(h);
     const card = document.createElement("section"); card.className = "card";
@@ -642,7 +654,6 @@ function setView(v){
 /* ---------- start-up wiring ---------- */
 $("bf").innerHTML = bfHTML("b"); $("ebf").innerHTML = bfHTML("e");
 wireBF("b"); wireBF("e"); buildServing(); renderFlav(); attachAll();
-$("size").innerHTML = '<option value="">Not sure</option>' + SIZES.map(s => `<option value="${s[0]}">${s[1]}</option>`).join("");
 
 /* ---------- show login or app ---------- */
 function show(session){
@@ -749,7 +760,7 @@ async function openBeer(id){
   $("dCount").textContent = "Loading..."; $("dTags").textContent = ""; $("dList").innerHTML = "";
 
   const c = await db.from("checkins")
-    .select("id, rating, serving_style, size_ml, venue_name, venue_city, flavour_tags, notes, checked_in_at")
+    .select("id, rating, serving_style, venue_name, venue_city, flavour_tags, notes, checked_in_at")
     .eq("beer_id", id).order("checked_in_at", { ascending: false });
   if (currentBeerId !== id) return;
   if (c.error){ $("dCount").textContent = "Could not load: " + c.error.message; return; }
@@ -772,7 +783,7 @@ async function openBeer(id){
     head.appendChild(div("name", fmtDate(ci.checked_in_at) + ", " + fmtTime(ci.checked_in_at)));
     if (ci.rating != null) head.appendChild(starsEl(parseFloat(ci.rating)));
     row.appendChild(head);
-    row.appendChild(div("sub", [ci.serving_style, ci.size_ml ? ci.size_ml + " ml" : null,
+    row.appendChild(div("sub", [ci.serving_style,
       [ci.venue_name, ci.venue_city].filter(Boolean).join(", "),
       ci.rating != null ? parseFloat(ci.rating).toFixed(2) : "Not rated"].filter(Boolean).join(", ")));
     if (ci.flavour_tags && ci.flavour_tags.length) row.appendChild(div("sub", ci.flavour_tags.join(", ")));
@@ -849,7 +860,6 @@ $("saveBtn").addEventListener("click", async () => {
       beer_id: beer.id,
       rating: parseFloat($("rating").value),
       serving_style: getServing() || null,
-      size_ml: $("size").value ? parseInt($("size").value, 10) : null,
       venue_name: $("vname").value.trim() || null,
       venue_city: $("vcity").value.trim() || null,
       flavour_tags: [...selFlav],
@@ -859,8 +869,8 @@ $("saveBtn").addEventListener("click", async () => {
     if (ck.error) throw ck.error;
 
     fillBF("b"); $("bmore").open = false; $("scanNote").textContent = "";
-    ["size","vname","vcity","notes"].forEach(id => { $(id).value = ""; });
-    $("size").dataset.auto = ""; setServing(""); selFlav.clear(); $("flavSearch").value = ""; renderFlav();
+    ["vname","vcity","notes"].forEach(id => { $(id).value = ""; });
+    setServing(""); selFlav.clear(); $("flavSearch").value = ""; renderFlav();
     $("rating").value = 3; updateRating(); $("when").value = nowLocal();
     await load();
     const gained = newBadgeNames(before);
@@ -966,18 +976,14 @@ function applyOFF(code, p){
   const n = p.nutriments || {}, abv = parseFloat(n.alcohol_100g ?? n.alcohol ?? n.alcohol_value);
   if (abv > 0 && abv <= 70) $("babv").value = abv;
 
+  let ml = 0;   // only used to tell a can from a king can or crowler; never saved
   const q = /(\d+(?:[.,]\d+)?)\s*(ml|cl|l)\b/i.exec(p.quantity || "");
   if (q){
     const v = parseFloat(q[1].replace(",", ".")), u = q[2].toLowerCase();
-    const ml = Math.round(u === "l" ? v * 1000 : u === "cl" ? v * 10 : v);
-    if (ml > 0 && ml < 5000){
-      const sel = $("size");
-      if (![...sel.options].some(o => o.value === String(ml))) sel.add(new Option(ml + " ml", ml));
-      sel.value = String(ml);
-    }
+    ml = Math.round(u === "l" ? v * 1000 : u === "cl" ? v * 10 : v);
   }
   const pk = p.packaging_tags || [];
-  if (pk.some(t => /(^|[:-])can($|-)/.test(t))) setServing((parseInt($("size").value, 10) || 0) >= 440 ? "King Can" : "Can");
+  if (pk.some(t => /(^|[:-])can($|-)/.test(t))) setServing(ml >= 900 ? "Crowler" : ml >= 440 ? "King Can" : "Can");
   else if (pk.some(t => /bottle/.test(t))) setServing("Bottle");
 
   $("bmore").open = true;
@@ -996,6 +1002,10 @@ $("torchBtn").addEventListener("click", async () => {
   try { torchOn = !torchOn; await torch.apply(torchOn); } catch (e){ torchOn = !torchOn; }
 });
 
+$("scopeTabs").addEventListener("click", e => {
+  const t = e.target.closest(".tab"); if (!t) return;
+  badgeScope = t.dataset.scope; renderBadges();
+});
 $("nav").addEventListener("click", e => {
   const t = e.target.closest(".tab"); if (!t) return;
   if (t.dataset.view === "app") showApp(); else { currentBeerId = null; setView("badges"); window.scrollTo(0, 0); }

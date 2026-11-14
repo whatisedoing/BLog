@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17110d">
+<title>BeerLog import</title>
+<style>
+:root{--oak:#17110d;--leather:#241a13;--leather2:#2f2218;--line:#4a3826;--brass:#d1a049;--claret:#8a2b3a;--claret2:#a63a4b;--parchment:#efe3cb;--muted:#a8977c}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--oak);color:var(--parchment);font-family:Georgia,"Palatino Linotype",Palatino,serif;line-height:1.55}
+body{padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px)}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+header{padding:18px 0 10px;border-bottom:3px double var(--brass);margin-bottom:18px}
+h1{margin:0;font-size:1.7rem;font-style:italic;font-weight:normal;color:var(--brass)}
+h2{font-size:1.15rem;font-weight:normal;font-style:italic;margin:26px 0 10px;color:var(--brass)}
+section.card{background:var(--leather);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:14px}
+input[type=file]{width:100%;padding:10px;background:var(--oak);border:1px solid var(--line);border-radius:4px;color:var(--parchment);font:inherit}
+button{font:inherit;cursor:pointer;border-radius:4px;padding:11px 16px;border:1px solid var(--brass);background:var(--claret);color:var(--parchment);width:100%;margin-top:16px;font-size:1.02rem}
+button:hover{background:var(--claret2)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+label.opt{display:flex;gap:10px;align-items:flex-start;margin-top:12px;color:var(--parchment)}
+label.opt input{margin-top:6px;accent-color:var(--brass)}
+label.opt small{display:block;color:var(--muted)}
+.meta{color:var(--muted);font-size:.92rem}
+.msg{margin-top:10px;font-size:.95rem}
+.err{color:#e88b8b}.ok{color:#a8d39a}
+.line{padding:6px 0;border-bottom:1px solid var(--line)}
+.line:last-child{border-bottom:none}
+.sample{padding:8px 0;border-bottom:1px solid var(--line)}
+.sample:last-child{border-bottom:none}
+pre{background:var(--oak);border:1px solid var(--line);border-radius:4px;padding:10px;overflow:auto;font-size:.8rem;white-space:pre-wrap}
+a{color:var(--brass)}
+.bar{height:8px;background:#3a2c20;border-radius:4px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:0;background:var(--brass)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Import from Untappd</h1></header>
+
+  <section id="gate" class="card">
+    <div id="gateMsg" class="meta">Checking your sign-in...</div>
+    <pre id="sqlBox" class="hidden"></pre>
+  </section>
+
+  <section id="pick" class="card hidden">
+    <label for="file" class="meta">Choose the CSV file Untappd emailed you</label>
+    <input id="file" type="file" accept=".csv,text/csv">
+    <label class="opt"><input id="optFlav" type="checkbox" checked>
+      <span>Import Untappd's flavour tags<small>Becomes each check-in's flavours, so suggestions for these beers start out useful.</small></span></label>
+    <label class="opt"><input id="optPhoto" type="checkbox" checked>
+      <span>Keep photo links for the photo transfer<small>Saved out of sight so the photos can be copied into BeerLog next. If you untick this, those photos can't be transferred later.</small></span></label>
+    <div id="fileMsg" class="msg"></div>
+  </section>
+
+  <section id="preview" class="card hidden">
+    <div id="summary"></div>
+    <h2 style="margin-top:18px">Samples</h2>
+    <div id="samples"></div>
+    <button id="go" disabled>Import</button>
+    <div class="bar hidden" id="barWrap"><i id="bar"></i></div>
+    <div id="prog" class="msg"></div>
+  </section>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+var plan = null;
+
+/* ---------- CSV reader (handles quotes, commas and line breaks inside fields) ---------- */
+function parseCSV(text){
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], field = "", inQ = false;
+  const endRow = () => { row.push(field); field = ""; if (row.length > 1 || row[0] !== "") rows.push(row); row = []; };
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (inQ){
+      if (c === '"'){ if (text[i + 1] === '"'){ field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r"){ if (c === "\r" && text[i + 1] === "\n") i++; endRow(); }
+    else field += c;
+  }
+  if (field !== "" || row.length) endRow();
+  const head = rows.shift() || [];
+  return { head, objs: rows.map(r => { const o = {}; head.forEach((h, i) => { o[h.trim()] = r[i] ?? ""; }); return o; }) };
+}
+
+/* ---------- mapping helpers ---------- */
+const PROV = { AB:"Alberta", BC:"British Columbia", MB:"Manitoba", NB:"New Brunswick", NL:"Newfoundland and Labrador", NS:"Nova Scotia",
+  NT:"Northwest Territories", NU:"Nunavut", ON:"Ontario", PE:"Prince Edward Island", QC:"Quebec", SK:"Saskatchewan", YT:"Yukon" };
+const USST = { AL:"Alabama", AK:"Alaska", AZ:"Arizona", AR:"Arkansas", CA:"California", CO:"Colorado", CT:"Connecticut", DE:"Delaware", DC:"District of Columbia",
+  FL:"Florida", GA:"Georgia", HI:"Hawaii", ID:"Idaho", IL:"Illinois", IN:"Indiana", IA:"Iowa", KS:"Kansas", KY:"Kentucky", LA:"Louisiana", ME:"Maine",
+  MD:"Maryland", MA:"Massachusetts", MI:"Michigan", MN:"Minnesota", MS:"Mississippi", MO:"Missouri", MT:"Montana", NE:"Nebraska", NV:"Nevada",
+  NH:"New Hampshire", NJ:"New Jersey", NM:"New Mexico", NY:"New York", NC:"North Carolina", ND:"North Dakota", OH:"Ohio", OK:"Oklahoma", OR:"Oregon",
+  PA:"Pennsylvania", RI:"Rhode Island", SC:"South Carolina", SD:"South Dakota", TN:"Tennessee", TX:"Texas", UT:"Utah", VT:"Vermont", VA:"Virginia",
+  WA:"Washington", WV:"West Virginia", WI:"Wisconsin", WY:"Wyoming" };
+function normRegion(r, country){
+  const k = r.toUpperCase();
+  if (country === "Canada" && PROV[k]) return PROV[k];
+  if (country === "United States" && USST[k]) return USST[k];
+  return r;
+}
+function familyOf(st){
+  const s = st.toLowerCase();
+  const rules = [[/ipa|india pale/,"IPA"],[/pale ale/,"Pale Ale"],[/stout|porter/,"Stout & Porter"],[/pilsner|pils\b/,"Pilsner"],
+    [/sour|gose|berliner|lambic|gueuze|wild ale/,"Sour"],[/wheat|weizen|weiss|witbier|\bwit\b/,"Wheat"],
+    [/belgian|saison|tripel|dubbel|quad|farmhouse|biere de garde/,"Belgian & Farmhouse"],
+    [/lager|helles|bock|dunkel|m[aä]rzen|vienna|schwarz|kellerbier|zwickel|california common/,"Lager"],
+    [/amber|red ale|irish red/,"Amber & Red"],[/brown|\bmild\b/,"Brown Ale"],
+    [/blonde|golden|k[oö]lsch|cream ale/,"Blonde & Golden"],[/barley ?wine|strong|scotch ale|wee heavy|old ale/,"Strong Ale"]];
+  for (const [re, f] of rules) if (re.test(s)) return f;
+  return s ? "Other" : "";
+}
+const SERVE = { can: "Can", draft: "Draft", tap: "Draft", cask: "Draft", taster: "Taster", bottle: "Bottle", crowler: "Crowler" };
+const clean = v => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
+const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+const titleCase = s => s.replace(/\b\w/g, c => c.toUpperCase());
+
+function toModels(r){
+  const country = clean(r.brewery_country), style = clean(r.beer_type);
+  const abv = num(r.beer_abv), ibu = parseInt(r.beer_ibu, 10), rating = num(r.rating_score);
+  let when = new Date(r.created_at_iso);
+  if (isNaN(when)) when = new Date(String(r.created_at_utc).replace(" ", "T") + "Z");
+  const serveRaw = clean(r.serving_type), serve = SERVE[serveRaw.toLowerCase()] || null;
+  return {
+    ts: when.getTime(), serveRaw, serve,
+    beer: {
+      name: clean(r.beer_name), brewery_name: clean(r.brewery_name) || null, brewery_city: clean(r.brewery_city) || null,
+      brewery_region: normRegion(clean(r.brewery_state), country) || null, brewery_country: country || null,
+      style: style || null, style_family: familyOf(style) || null,
+      abv: abv !== null && abv > 0 && abv < 100 ? abv : null, ibu: ibu > 0 && ibu < 1000 ? ibu : null,
+      untappd_bid: clean(r.bid)
+    },
+    ck: {
+      rating: rating !== null && rating >= 0.25 && rating <= 5 && (rating * 4) % 1 === 0 ? rating : null,
+      serving_style: serve, venue_name: clean(r.venue_name) || null, venue_city: clean(r.venue_city) || null,
+      notes: String(r.comment || "").trim() || null,
+      checked_in_at: when.toISOString(), untappd_checkin_id: clean(r.checkin_id),
+      _tags: String(r.flavor_profiles || "").split(",").map(t => titleCase(clean(t))).filter(Boolean),
+      _photo: /^https?:\/\//.test(clean(r.photo_url)) ? clean(r.photo_url) : null
+    }
+  };
+}
+
+/* ---------- read what's already in BeerLog ---------- */
+async function fetchAll(table, cols){
+  const out = [];
+  for (let from = 0; ; from += 1000){
+    const r = await db.from(table).select(cols).order("id").range(from, from + 999);
+    if (r.error) throw r.error;
+    out.push(...r.data);
+    if (r.data.length < 1000) break;
+  }
+  return out;
+}
+
+async function handleText(text){
+  $("go").disabled = true; $("preview").classList.add("hidden");
+  const msg = $("fileMsg"); msg.className = "msg"; msg.textContent = "Reading the file...";
+  const parsed = parseCSV(text);
+  const need = ["beer_name", "brewery_name", "bid", "checkin_id", "created_at_iso", "rating_score", "serving_type", "beer_type"];
+  const missing = need.filter(h => !parsed.head.includes(h));
+  if (missing.length){ msg.className = "msg err"; msg.textContent = "This doesn't look like the Untappd export. Missing columns: " + missing.join(", ") + "."; return; }
+
+  let beersNow, ckNow;
+  try {
+    beersNow = await fetchAll("beers", "id, name, brewery_name, untappd_bid");
+    ckNow = await fetchAll("checkins", "id, untappd_checkin_id");
+  } catch (e){ msg.className = "msg err"; msg.textContent = "Couldn't read your BeerLog data: " + e.message; return; }
+
+  const models = [], bad = [];
+  parsed.objs.forEach(r => {
+    const m = toModels(r);
+    if (!m.beer.name || !m.beer.untappd_bid || !m.ck.untappd_checkin_id || isNaN(m.ts)) bad.push(r); else models.push(m);
+  });
+  models.sort((a, b) => a.ts - b.ts);
+
+  const haveCk = new Set(ckNow.map(c => c.untappd_checkin_id).filter(Boolean));
+  const byBid = new Map(), byKey = new Map();
+  beersNow.forEach(b => {
+    if (b.untappd_bid) byBid.set(b.untappd_bid, b);
+    else byKey.set(clean(b.name).toLowerCase() + "|" + clean(b.brewery_name).toLowerCase(), b);
+  });
+
+  const latest = new Map();               // newest row wins for each beer's details
+  models.forEach(m => latest.set(m.beer.untappd_bid, m.beer));
+  const idByBid = new Map(), newBeers = [], links = [];
+  latest.forEach((beer, bid) => {
+    if (byBid.has(bid)) { idByBid.set(bid, byBid.get(bid).id); return; }
+    const hit = byKey.get(beer.name.toLowerCase() + "|" + (beer.brewery_name || "").toLowerCase());
+    if (hit){ idByBid.set(bid, hit.id); links.push({ id: hit.id, bid }); byKey.delete(beer.name.toLowerCase() + "|" + (beer.brewery_name || "").toLowerCase()); }
+    else newBeers.push(beer);
+  });
+  const todo = models.filter(m => !haveCk.has(m.ck.untappd_checkin_id));
+  const already = models.length - todo.length;
+
+  plan = { newBeers, links, idByBid, todo };
+
+  const tally = (arr, f) => { const t = {}; arr.forEach(x => { const k = f(x); t[k] = (t[k] || 0) + 1; }); return t; };
+  const fmt = t => Object.entries(t).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + " " + v).join(", ");
+  const rated = todo.filter(m => m.ck.rating !== null).length;
+  const odd = tally(todo.filter(m => m.serveRaw && !SERVE[m.serveRaw.toLowerCase()]), m => m.serveRaw);
+  const first = models.length ? new Date(models[0].ts) : null, last = models.length ? new Date(models[models.length - 1].ts) : null;
+  const d = x => x.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+
+  const box = $("summary"); box.innerHTML = "";
+  const add = (t, cls) => { const el = document.createElement("div"); el.className = "line" + (cls ? " " + cls : ""); el.textContent = t; box.appendChild(el); };
+  add(models.length + " check-ins in the file" + (first ? ", from " + d(first) + " to " + d(last) + "." : "."));
+  if (already) add(already + " are already in BeerLog and will be skipped.");
+  add("To import: " + todo.length + " check-ins, " + newBeers.length + " new beers" +
+    (links.length ? ", and " + links.length + " beers that match ones you already have (they'll be linked, not duplicated)." : "."));
+  add("Ratings: " + rated + " rated, " + (todo.length - rated) + " unrated.");
+  add("Serving styles: " + (fmt(tally(todo, m => m.serve || "Not set")) || "none") + "." +
+    (Object.keys(odd).length ? " Not recognised, left blank: " + fmt(odd) + "." : ""));
+  const withPhoto = todo.filter(m => m.ck._photo).length;
+  add(withPhoto + " check-ins have a photo on Untappd. Only the links are saved, held aside until the photo transfer step. Nothing in BeerLog loads from Untappd.");
+  if (bad.length) add(bad.length + " rows were missing a beer name or ID and will be left out.", "err");
+  add("Not imported: tagged friends, toasts, global ratings, and the bought-at field.", "meta");
+  const sm = $("samples"); sm.innerHTML = "";
+  todo.slice(-3).reverse().forEach(m => {
+    const el = document.createElement("div"); el.className = "sample";
+    const a = document.createElement("div"); a.textContent = m.beer.name + (m.beer.brewery_name ? " (" + m.beer.brewery_name + ")" : "");
+    const b = document.createElement("div"); b.className = "meta";
+    b.textContent = [m.beer.style, m.beer.style_family && m.beer.style_family !== m.beer.style ? "family: " + m.beer.style_family : null,
+      m.ck.rating !== null ? m.ck.rating.toFixed(2) + " stars" : "unrated", m.serve, m.ck.venue_name, d(new Date(m.ts))].filter(Boolean).join(", ");
+    el.appendChild(a); el.appendChild(b); sm.appendChild(el);
+  });
+  msg.textContent = "";
+  $("preview").classList.remove("hidden");
+  $("go").disabled = !todo.length;
+  $("go").textContent = todo.length ? "Import " + todo.length + " check-ins" : "Nothing new to import";
+}
+
+/* ---------- do the import ---------- */
+async function doImport(){
+  if (!plan) return;
+  const go = $("go"), prog = $("prog"), flav = $("optFlav").checked, photo = $("optPhoto").checked;
+  go.disabled = true; $("barWrap").classList.remove("hidden"); prog.className = "msg";
+  const total = plan.newBeers.length + plan.links.length + plan.todo.length; let done = 0;
+  const tick = (label) => { prog.textContent = label + " (" + done + " of " + total + ")"; $("bar").style.width = Math.round(done / total * 100) + "%"; };
+  try {
+    for (let i = 0; i < plan.newBeers.length; i += 100){
+      const chunk = plan.newBeers.slice(i, i + 100); tick("Adding beers");
+      const r = await db.from("beers").insert(chunk).select("id, untappd_bid");
+      if (r.error) throw r.error;
+      r.data.forEach(b => plan.idByBid.set(b.untappd_bid, b.id));
+      done += chunk.length;
+    }
+    for (const l of plan.links){
+      tick("Linking existing beers");
+      const r = await db.from("beers").update({ untappd_bid: l.bid }).eq("id", l.id);
+      if (r.error) throw r.error; done++;
+    }
+    for (let i = 0; i < plan.todo.length; i += 100){
+      const chunk = plan.todo.slice(i, i + 100); tick("Adding check-ins");
+      const rows = chunk.map(m => {
+        const c = Object.assign({}, m.ck), tags = c._tags, ph = c._photo; delete c._tags; delete c._photo;
+        c.beer_id = plan.idByBid.get(m.beer.untappd_bid);
+        c.flavour_tags = flav ? tags : []; c.untappd_photo_url = photo ? ph : null;
+        return c;
+      });
+      const r = await db.from("checkins").insert(rows);
+      if (r.error) throw r.error;
+      done += chunk.length;
+    }
+    $("bar").style.width = "100%";
+    prog.className = "msg ok";
+    prog.textContent = "Done. " + plan.todo.length + " check-ins and " + plan.newBeers.length + " new beers imported. ";
+    const a = document.createElement("a"); a.href = "index.html"; a.textContent = "Open BeerLog"; prog.appendChild(a);
+    go.textContent = "Imported"; plan = null;
+  } catch (e){
+    prog.className = "msg err";
+    prog.textContent = "Stopped: " + e.message + ". Nothing is lost. Reload this page and choose the file again to carry on where it stopped.";
+    go.disabled = false;
+  }
+}
+
+/* ---------- start ---------- */
+const SQL_TEXT = "alter table beers add column if not exists untappd_bid text;\nalter table checkins add column if not exists untappd_checkin_id text;\nalter table checkins add column if not exists untappd_photo_url text;\nupdate checkins set serving_style = 'Draft' where serving_style = 'Tap';\ncreate unique index if not exists beers_untappd_bid_key on beers (user_id, untappd_bid);\ncreate unique index if not exists checkins_untappd_id_key on checkins (user_id, untappd_checkin_id);";
+async function start(){
+  const s = await db.auth.getSession();
+  if (!s.data.session){
+    $("gateMsg").textContent = "You're not signed in on this page. Open BeerLog, sign in, then come back here.";
+    const a = document.createElement("a"); a.href = "index.html"; a.textContent = " Open BeerLog"; $("gateMsg").appendChild(a); return;
+  }
+  const t = await db.from("beers").select("untappd_bid").limit(1);
+  const t2 = await db.from("checkins").select("untappd_checkin_id, untappd_photo_url").limit(1);
+  if (t.error || t2.error){
+    $("gateMsg").textContent = "One setup step first. In Supabase, open SQL Editor, paste this, and click Run. Then reload this page.";
+    $("sqlBox").textContent = SQL_TEXT; $("sqlBox").classList.remove("hidden"); return;
+  }
+  $("gate").classList.add("hidden"); $("pick").classList.remove("hidden");
+}
+$("file").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader(); rd.onload = () => handleText(String(rd.result)); rd.onerror = () => { $("fileMsg").className = "msg err"; $("fileMsg").textContent = "Couldn't read that file."; };
+  rd.readAsText(f);
+});
+$("go").addEventListener("click", doImport);
+start();
+</script>
+</body>
+</html>
