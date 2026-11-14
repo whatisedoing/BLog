@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#17110d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BeerLog">
 <title>BeerLog</title>
 <style>
 :root{--oak:#17110d;--leather:#241a13;--leather2:#2f2218;--line:#4a3826;--brass:#d1a049;--claret:#8a2b3a;--claret2:#a63a4b;--parchment:#efe3cb;--muted:#a8977c}
@@ -190,6 +196,11 @@ button.scan{margin-top:0}
     <div id="badgeSummary" class="meta"></div>
     <div id="badgeList"></div>
   </section>
+
+  <div id="foot" class="hidden" style="margin-top:34px;padding-top:14px;border-top:1px solid var(--line)">
+    <button id="exportBtn" class="quiet" type="button">Download backup (CSV)</button>
+    <div id="exportMsg" class="msg meta"></div>
+  </div>
 </div>
 
 <div id="scanner" class="modal hidden" role="dialog" aria-label="Barcode scanner">
@@ -708,11 +719,60 @@ function openPhoto(src){
   m.appendChild(im); m.addEventListener("click", () => m.remove()); document.body.appendChild(m);
 }
 
+/* ---------- backup: download every check-in as a CSV file ---------- */
+function csvCell(v){
+  if (v == null) return "";
+  if (Array.isArray(v)) v = v.join("; ");
+  v = String(v);
+  return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+$("exportBtn").addEventListener("click", async () => {
+  const btn = $("exportBtn"), msg = $("exportMsg");
+  btn.disabled = true; setMsg(msg, "Collecting your check-ins...");
+  try {
+    const bs = [];
+    for (let from = 0; ; from += 1000){
+      const r = await db.from("beers").select("*").order("id").range(from, from + 999);
+      if (r.error) throw new Error(r.error.message);
+      bs.push(...r.data); if (r.data.length < 1000) break;
+    }
+    const cs = [];
+    for (let from = 0; ; from += 1000){
+      const r = await db.from("checkins").select("*").order("checked_in_at", { ascending: true }).order("id").range(from, from + 999);
+      if (r.error) throw new Error(r.error.message);
+      cs.push(...r.data); if (r.data.length < 1000) break;
+    }
+    const by = {}; bs.forEach(b => { by[b.id] = b; });
+    const cols = [
+      ["checked_in_utc", (c, b) => c.checked_in_at], ["beer", (c, b) => b.name], ["brewery", (c, b) => b.brewery_name],
+      ["style", (c, b) => b.style], ["style_family", (c, b) => b.style_family], ["abv", (c, b) => b.abv], ["ibu", (c, b) => b.ibu],
+      ["brewery_city", (c, b) => b.brewery_city], ["brewery_region", (c, b) => b.brewery_region], ["brewery_country", (c, b) => b.brewery_country],
+      ["brewery_type", (c, b) => b.brewery_type], ["barcode", (c, b) => b.barcode],
+      ["rating", (c, b) => c.rating], ["serving_style", (c, b) => c.serving_style], ["venue", (c, b) => c.venue_name], ["venue_city", (c, b) => c.venue_city],
+      ["flavours", (c, b) => c.flavour_tags], ["notes", (c, b) => c.notes], ["photo_file", (c, b) => c.photo_url],
+      ["checkin_id", (c, b) => c.id], ["beer_id", (c, b) => c.beer_id], ["untappd_checkin_id", (c, b) => c.untappd_checkin_id], ["untappd_bid", (c, b) => b.untappd_bid]
+    ];
+    const lines = [cols.map(c => c[0]).join(",")];
+    cs.forEach(c => { const b = by[c.beer_id] || {}; lines.push(cols.map(col => csvCell(col[1](c, b))).join(",")); });
+    const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"), d = new Date();
+    a.href = URL.createObjectURL(blob);
+    a.download = "beerlog-backup-" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    setMsg(msg, "Saved " + cs.length + " check-ins. Photos are not in this file; they stay in your Supabase storage.", "ok");
+  } catch (e) {
+    setMsg(msg, "Could not make the backup: " + e.message, "err");
+  }
+  btn.disabled = false;
+});
+
 /* ---------- show login or app ---------- */
 function show(session){
   const was = signedIn; signedIn = !!session; currentUserId = session && session.user ? session.user.id : null;
   $("login").classList.toggle("hidden", signedIn);
   $("signout").classList.toggle("hidden", !signedIn);
+  $("foot").classList.toggle("hidden", !signedIn);
   if (!signedIn){ ["app", "detail", "badges", "stats", "nav"].forEach(id => $(id).classList.add("hidden")); currentBeerId = null; return; }
   if (!was) showApp();
 }
@@ -1091,5 +1151,6 @@ db.auth.getSession().then(({ data }) => show(data.session));
 db.auth.onAuthStateChange((_evt, session) => show(session));
 </script>
 <script src="stats.js"></script>
+<script>if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>
 </body>
 </html>
