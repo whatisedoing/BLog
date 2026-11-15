@@ -115,56 +115,75 @@ body.onhome header h1{display:none}
 body.onhome #signout{border-color:transparent;padding:6px 0;font-size:.82rem}
 /* ---------- home ---------- */
 #home{display:flex;flex-direction:column;min-height:calc(100vh - 150px)}
-#home .sign{text-align:center;margin:18px 0 0;position:relative}
+body.onhome{overflow:hidden;padding-bottom:0}
+body.onhome #home{min-height:0;overflow:hidden;
+  height:calc(100vh - var(--chrome, 126px) - env(safe-area-inset-top));
+  height:calc(100dvh - var(--chrome, 126px) - env(safe-area-inset-top))}
+#home .sign{text-align:center;margin:clamp(2px,1.6dvh,18px) 0 0;position:relative}
 #home .sign:before{content:"";position:absolute;left:50%;top:-70px;transform:translateX(-50%);
   width:420px;height:300px;pointer-events:none;
   background:radial-gradient(50% 44% at 50% 40%,rgba(74,170,125,.26),rgba(255,180,70,.08) 52%,transparent 74%)}
 #home .frame{position:relative;display:inline-block;padding:7px;border-radius:19px;
   background:linear-gradient(168deg,#e8c88c,#8f6c31 45%,#d7b06a 72%,#7d5d28);
   box-shadow:0 14px 34px rgba(0,0,0,.66),0 0 72px rgba(60,150,110,.3)}
-#home .panel{border-radius:13px;padding:16px 24px 15px;display:flex;align-items:center;gap:15px;
+#home .panel{border-radius:13px;padding:clamp(11px,1.9dvh,16px) 24px clamp(10px,1.8dvh,15px);display:flex;align-items:center;gap:15px;
   background:radial-gradient(120% 150% at 50% 0%,#3f7a60,#255142 60%,#1b3b31);
   box-shadow:inset 0 0 20px rgba(0,0,0,.5),0 0 30px rgba(74,170,125,.4)}
-#home .panel svg{width:40px;height:56px;flex:none}
-#home .wm{font-size:2rem;font-weight:bold;letter-spacing:-.5px;color:#f6ecd6;line-height:1;
+#home .panel svg{width:clamp(30px,4.6dvh,40px);height:clamp(42px,6.4dvh,56px);flex:none}
+#home .wm{font-size:clamp(1.6rem,4.1dvh,2rem);font-weight:bold;letter-spacing:-.5px;color:#f6ecd6;line-height:1;
   text-shadow:0 0 14px rgba(255,240,200,.45)}
 #home .wm em{font-style:italic;font-weight:normal;color:#e8c179}
-#home .cap{margin-top:12px;font-size:.62rem;letter-spacing:3.4px;text-transform:uppercase;color:var(--muted);font-family:system-ui,sans-serif}
-#home .ledger{display:flex;margin-top:22px;padding:17px 0 15px;
-  border-top:1px solid rgba(209,160,73,.26);border-bottom:1px solid rgba(95,140,115,.42)}
+#home .cap{margin-top:clamp(6px,1.4dvh,12px);font-size:.62rem;letter-spacing:3.4px;text-transform:uppercase;color:var(--muted);font-family:system-ui,sans-serif}
+#home .ledger{display:flex;margin-top:clamp(10px,2.4dvh,22px);padding:clamp(10px,1.9dvh,17px) 0 clamp(9px,1.7dvh,15px);
+  border-top:1px solid rgba(209,160,73,.26);border-bottom:1px solid rgba(209,160,73,.26)}
 #home .lg{flex:1;text-align:center;position:relative}
 #home .lg+.lg:before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:1px;background:rgba(209,160,73,.18)}
-#home .lg b{display:block;font-size:1.8rem;font-weight:normal;line-height:1.05;color:#e2b662}
+#home .lg b{display:block;font-size:clamp(1.45rem,3.3dvh,1.8rem);font-weight:normal;line-height:1.05;color:#e2b662}
 #home .lg span{display:block;margin-top:4px;font-size:.6rem;letter-spacing:2.2px;text-transform:uppercase;color:var(--muted);font-family:system-ui,sans-serif}
 #home .shelf{margin:auto 0}
 #home .sh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
 #home .sh .t{font-size:.63rem;letter-spacing:3.2px;text-transform:uppercase;color:var(--muted);font-family:system-ui,sans-serif}
-#home button.link{width:auto;margin:0;padding:2px 0;border:none;background:none;color:#7fb398;
+#home button.link{width:auto;margin:0;padding:2px 0;border:none;background:none;color:var(--brass);
   font-size:.63rem;letter-spacing:2.4px;text-transform:uppercase;font-family:system-ui,sans-serif}
 #home .cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
 #home .c{width:auto;min-width:0;margin:0;text-align:left;background:rgba(32,23,16,.78);border:1px solid rgba(209,160,73,.2);
   border-radius:13px;padding:7px 7px 10px;color:inherit;font-size:1rem}
 #home .c:hover{background:rgba(44,32,22,.85);border-color:rgba(209,160,73,.45)}
-#home .im{height:112px;border-radius:9px;overflow:hidden;position:relative;display:grid;place-items:center;
+#home .im{height:clamp(56px,12.2dvh,112px);border-radius:9px;overflow:hidden;position:relative;display:grid;place-items:center;
   background:repeating-linear-gradient(135deg,rgba(255,255,255,.014) 0 3px,transparent 3px 7px),linear-gradient(160deg,#2c2118,#191209)}
 #home .im img{width:100%;height:100%;object-fit:cover;display:block}
 #home .im svg{width:62px;height:82px;opacity:.42}
-#home .cn{margin-top:8px;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--parchment)}
+#home .cn{margin-top:clamp(5px,1dvh,8px);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--parchment)}
 #home .cm{font-size:.72rem;color:var(--brass);margin-top:2px;font-family:system-ui,sans-serif}
-#home .cta{display:block;width:100%;margin-top:20px;border:none;border-radius:15px;padding:17px 0;
-  font-family:Georgia,"Palatino Linotype",Palatino,serif;font-size:1.06rem;letter-spacing:2.4px;text-transform:uppercase;
+#home .cta{display:block;width:100%;margin-top:clamp(10px,2.2dvh,20px);border:none;border-radius:15px;padding:clamp(12px,2dvh,17px) 0;
+  font-family:Georgia,"Palatino Linotype",Palatino,serif;font-weight:bold;font-size:1.16rem;letter-spacing:3px;text-transform:uppercase;
   color:#1b1209;background:linear-gradient(180deg,#e9bf6d,#c9933c);
   box-shadow:0 1px 0 rgba(255,255,255,.42) inset,0 -2px 0 rgba(0,0,0,.26) inset,0 10px 26px rgba(201,147,60,.26)}
 #home .cta:hover{background:linear-gradient(180deg,#f0c87a,#d29c42)}
-#home .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:10px}
-#home .pill{width:auto;min-width:0;margin:0;border:1px solid rgba(209,160,73,.32);border-radius:13px;background:rgba(31,22,16,.8);
-  padding:11px 4px 10px;text-align:center;color:inherit;font-size:1rem}
-#home .pill:hover{background:rgba(44,32,22,.9)}
+#home .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:clamp(7px,1.3dvh,10px)}
+#home .pill{width:auto;min-width:0;margin:0;border:2px solid rgba(209,160,73,.8);border-radius:14px;
+  background:linear-gradient(180deg,#36604e,#1f3a30);
+  padding:11px 4px 10px;text-align:center;color:inherit;font-size:1rem;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.4)}
+#home .pill:hover{background:linear-gradient(180deg,#3d6c58,#254437)}
 #home .chip{width:30px;height:30px;margin:0 auto;border-radius:9px;display:grid;place-items:center;
-  background:rgba(47,82,68,.55);border:1px solid rgba(111,156,130,.45);color:#8fc0a4}
+  background:rgba(0,0,0,.2);border:1px solid rgba(232,193,121,.45);color:#f0dcb0}
 #home .chip svg{width:17px;height:17px;fill:currentColor}
-#home .pl{display:block;margin-top:7px;font-size:.64rem;letter-spacing:1.3px;text-transform:uppercase;color:#cbb690;font-family:system-ui,sans-serif}
-#home .pn{display:block;font-size:.64rem;color:var(--muted);margin-top:2px;font-family:system-ui,sans-serif}
+#home .pl{display:block;margin-top:7px;font-size:.64rem;letter-spacing:1.3px;text-transform:uppercase;color:#f3e7d0;font-family:system-ui,sans-serif}
+#home .pn{display:block;font-size:.64rem;color:#a9c7b6;margin-top:2px;font-family:system-ui,sans-serif}
+/* ---------- menu ---------- */
+#menuBtn{width:auto;margin:0;padding:6px 8px;border-color:transparent;line-height:0}
+#menuBtn svg{width:26px;height:26px;fill:var(--brass)}
+#menu{position:fixed;z-index:8;top:calc(env(safe-area-inset-top) + 56px);right:12px;width:230px;
+  background:var(--leather);border:1px solid var(--brass);border-radius:8px;padding:6px;
+  box-shadow:0 14px 34px rgba(0,0,0,.6)}
+#menu button{display:block;width:100%;margin:0;text-align:left;background:none;border:none;border-radius:6px;
+  padding:12px 12px;font-size:.98rem;color:var(--parchment)}
+#menu button:hover{background:var(--leather2)}
+#menu .sep{height:1px;background:var(--line);margin:4px 8px}
+#menu .msg{padding:0 12px 8px;font-size:.8rem}
+#menu .msg:empty{display:none;padding:0;min-height:0}
+#scrim{position:fixed;inset:0;z-index:7;background:rgba(10,7,5,.35)}
 .hidden{display:none !important}
 </style>
 </head>
@@ -172,7 +191,7 @@ body.onhome #signout{border-color:transparent;padding:6px 0;font-size:.82rem}
 <div class="wrap">
   <header>
     <h1>BeerLog</h1>
-    <button id="signout" class="quiet hidden">Sign out</button>
+    <button id="menuBtn" class="quiet hidden" type="button" aria-label="Menu" aria-haspopup="true" aria-expanded="false"></button>
   </header>
 
   <section id="home" class="hidden">
@@ -285,10 +304,14 @@ body.onhome #signout{border-color:transparent;padding:6px 0;font-size:.82rem}
     <div id="badgeList"></div>
   </section>
 
-  <div id="foot" class="hidden" style="margin-top:34px;padding-top:14px;border-top:1px solid var(--line)">
-    <button id="exportBtn" class="quiet" type="button">Download backup (CSV)</button>
-    <div id="exportMsg" class="msg meta"></div>
-  </div>
+</div>
+
+<div id="scrim" class="hidden"></div>
+<div id="menu" class="hidden" role="menu">
+  <button id="exportBtn" type="button" role="menuitem">Download backup (CSV)</button>
+  <div id="exportMsg" class="msg meta"></div>
+  <div class="sep"></div>
+  <button id="signout" type="button" role="menuitem">Sign out</button>
 </div>
 
 <nav id="nav" class="hidden">
@@ -508,6 +531,7 @@ const ICON = {
   mdiLeafMaple: "M21.79,13L16,16L17,18L13,17.25V21H11V17.25L7,18L8,16L2.21,13L3.21,11.27L1.61,8L5.21,7.77L6.21,6L9.63,9.9L8,5H10L12,2L14,5H16L14.37,9.9L17.79,6L18.79,7.73L22.39,7.96L20.79,11.19L21.79,13Z",
   mdiStorefront: "M5.06 3C4.63 3 4.22 3.14 3.84 3.42C3.46 3.7 3.24 4.06 3.14 4.5L2.11 8.91C1.86 10 2.06 10.92 2.69 11.73C2.81 11.85 2.93 11.97 3.04 12.07C3.63 12.64 4.28 13 5.22 13C6.16 13 6.91 12.59 7.47 12.05C8.1 12.67 8.86 13 9.8 13C10.64 13 11.44 12.63 12 12.07C12.68 12.7 13.45 13 14.3 13C15.17 13 15.91 12.67 16.54 12.05C17.11 12.62 17.86 13 18.81 13C19.76 13 20.43 12.65 21 12.06C21.09 11.97 21.18 11.87 21.28 11.77C21.94 10.95 22.14 10 21.89 8.91L20.86 4.5C20.73 4.06 20.5 3.7 20.13 3.42C19.77 3.14 19.38 3 18.94 3M18.89 4.97L19.97 9.38C20.06 9.81 19.97 10.2 19.69 10.55C19.44 10.86 19.13 11 18.75 11C18.44 11 18.17 10.9 17.95 10.66C17.73 10.43 17.61 10.16 17.58 9.84L16.97 5M5.06 5H7.03L6.42 9.84C6.3 10.63 5.91 11 5.25 11C4.84 11 4.53 10.86 4.31 10.55C4.03 10.2 3.94 9.81 4.03 9.38M9.05 5H11V9.7C11 10.05 10.89 10.35 10.64 10.62C10.39 10.88 10.08 11 9.7 11C9.36 11 9.07 10.88 8.84 10.59C8.61 10.3 8.5 10 8.5 9.66V9.5M13 5H14.95L15.5 9.5C15.58 9.92 15.5 10.27 15.21 10.57C14.95 10.87 14.61 11 14.2 11C13.89 11 13.61 10.88 13.36 10.62C13.11 10.35 13 10.05 13 9.7M3 14.03V19C3 20.11 3.89 21 5 21C9.67 21 14.33 21 19 21C20.1 21 21 20.11 21 19V14.05C20.45 14.63 19.75 14.96 19 15C18 15.03 17.25 14.74 16.54 14.05C15.94 14.65 15.14 15 14.3 15C13.4 15 12.6 14.64 12 14.07C11.43 14.64 10.65 15 9.78 15C8.87 15 8.07 14.65 7.47 14.05C6.89 14.64 6.1 15 5.23 15C4.33 15 3.66 14.65 3 14.03Z",
   mdiHome: "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z",
+  mdiMenu: "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z",
   mdiChartBar: "M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z",
   mdiPlusBox: "M17,13H13V17H11V13H7V11H11V7H13V11H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z",
   mdiStar: "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z",
@@ -766,11 +790,12 @@ function renderBadges(){
 }
 
 /* ---------- views ---------- */
+let currentView = "home";
 function setView(v){
+  currentView = v;
   ["home", "app", "detail", "badges", "stats"].forEach(id => $(id).classList.toggle("hidden", id !== v));
   $("nav").classList.remove("hidden");
   document.body.classList.toggle("onhome", v === "home");
-  $("foot").classList.toggle("hidden", v === "home");
   const tab = v === "detail" ? detailFrom : v;
   document.querySelectorAll("#nav .tab").forEach(b => b.classList.toggle("on", b.dataset.view === tab));
   if (v === "badges") renderBadges();
@@ -822,7 +847,8 @@ function openPhoto(src){
   const m = document.createElement("div"); m.className = "modal"; m.style.alignItems = "center"; m.style.cursor = "zoom-out";
   const im = document.createElement("img"); im.src = src; im.alt = "Photo";
   im.style.cssText = "max-width:100%;max-height:92vh;border-radius:4px;margin:auto";
-  m.appendChild(im); m.addEventListener("click", () => m.remove()); document.body.appendChild(m);
+  m.appendChild(im); m.addEventListener("click", () => back()); document.body.appendChild(m);
+  pushState({ view: "overlay" });
 }
 
 /* ---------- backup: download every check-in as a CSV file ---------- */
@@ -906,7 +932,7 @@ function renderHome(){
     card.appendChild(im);
     card.appendChild(div("cn", beer.name || "Unknown beer"));
     card.appendChild(div("cm", ci.rating != null ? "\u2605 " + parseFloat(ci.rating).toFixed(2) : fmtDate(ci.checked_in_at)));
-    card.addEventListener("click", () => openBeer(ci.beer_id, "home"));
+    card.addEventListener("click", () => goBeer(ci.beer_id, "home"));
     box.appendChild(card);
   });
   const paths = recent.map(c => c.photo_url).filter(Boolean);
@@ -923,24 +949,71 @@ function renderHome(){
     });
   });
 }
-function showHome(){ currentBeerId = null; setView("home"); window.scrollTo(0, 0); load(); }
-$("hCheckin").addEventListener("click", () => showApp());
-$("hAll").addEventListener("click", () => { showApp(); setTimeout(() => $("recent").scrollIntoView({ behavior: "smooth", block: "start" }), 80); });
+function sizeHome(){
+  const h = document.querySelector("header").offsetHeight + $("nav").offsetHeight;
+  if (h > 40) document.documentElement.style.setProperty("--chrome", h + "px");
+}
+window.addEventListener("resize", sizeHome);
+window.addEventListener("orientationchange", () => setTimeout(sizeHome, 120));
+function showHome(){ currentBeerId = null; setView("home"); window.scrollTo(0, 0); sizeHome(); load(); }
+$("hCheckin").addEventListener("click", () => goApp());
+$("hAll").addEventListener("click", () => { goApp(); setTimeout(() => $("recent").scrollIntoView({ behavior: "smooth", block: "start" }), 80); });
 document.querySelectorAll("#home .pill").forEach(b => b.addEventListener("click", () => {
   const go = b.dataset.go;
-  if (go === "beers"){ showApp(); setTimeout(() => $("beerList").scrollIntoView({ behavior: "smooth", block: "start" }), 80); }
-  else { currentBeerId = null; setView(go); window.scrollTo(0, 0); }
+  if (go === "beers"){ goApp(); setTimeout(() => $("beerList").scrollIntoView({ behavior: "smooth", block: "start" }), 80); }
+  else goView(go);
 }));
+
+/* ---------- menu ---------- */
+$("menuBtn").innerHTML = svgIcon("mdiMenu");
+function menuOpen(){ return !$("menu").classList.contains("hidden"); }
+function openMenu(){
+  $("menu").classList.remove("hidden"); $("scrim").classList.remove("hidden");
+  $("menuBtn").setAttribute("aria-expanded", "true"); setMsg($("exportMsg"), "");
+  pushState({ view: "overlay" });
+}
+function closeMenu(){
+  $("menu").classList.add("hidden"); $("scrim").classList.add("hidden");
+  $("menuBtn").setAttribute("aria-expanded", "false");
+}
+$("menuBtn").addEventListener("click", () => { if (menuOpen()) back(); else openMenu(); });
+$("scrim").addEventListener("click", () => back());
+document.addEventListener("keydown", e => { if (e.key === "Escape" && menuOpen()) back(); });
+
+/* ---------- the Android back button steps back through the app ---------- */
+function pushState(st){ try { history.pushState(st, ""); } catch (e) {} }
+function overlayOpen(){ return menuOpen() || !$("scanner").classList.contains("hidden") || !!document.querySelector(".modal:not(#scanner)"); }
+function closeOverlays(){
+  closeMenu();
+  if (!$("scanner").classList.contains("hidden")) closeScanner();
+  document.querySelectorAll(".modal:not(#scanner)").forEach(m => m.remove());
+}
+function back(){ history.back(); }
+function applyState(st){
+  const wasOverlay = overlayOpen();
+  closeOverlays();
+  if (!st || !st.view || st.view === "overlay"){ if (signedIn && !wasOverlay) showHome(); return; }
+  if (st.view === currentView && st.view !== "detail") return;
+  if (st.view === "detail" && st.beer){ openBeer(st.beer, st.from || "app"); return; }
+  if (st.view === "app"){ showApp(); return; }
+  if (st.view === "home"){ showHome(); return; }
+  currentBeerId = null; setView(st.view); window.scrollTo(0, 0);
+}
+window.addEventListener("popstate", e => { if (!signedIn) return; applyState(e.state); });
+/* navigation helpers that remember where you came from */
+function goHome(){ pushState({ view: "home" }); showHome(); }
+function goApp(){ pushState({ view: "app" }); showApp(); }
+function goView(v){ pushState({ view: v }); currentBeerId = null; setView(v); window.scrollTo(0, 0); }
+function goBeer(id, from){ pushState({ view: "detail", beer: id, from: from || "app" }); openBeer(id, from); }
 
 /* ---------- show login or app ---------- */
 function show(session){
   const was = signedIn; signedIn = !!session; currentUserId = session && session.user ? session.user.id : null;
   $("login").classList.toggle("hidden", signedIn);
-  $("signout").classList.toggle("hidden", !signedIn);
-  $("foot").classList.toggle("hidden", !signedIn);
-  if (!signedIn){ ["home", "app", "detail", "badges", "stats", "nav"].forEach(id => $(id).classList.add("hidden"));
+  $("menuBtn").classList.toggle("hidden", !signedIn);
+  if (!signedIn){ ["home", "app", "detail", "badges", "stats", "nav", "menu", "scrim"].forEach(id => $(id).classList.add("hidden"));
     document.body.classList.remove("onhome"); currentBeerId = null; return; }
-  if (!was) showHome();
+  if (!was){ try { history.replaceState({ view: "home" }, ""); } catch (e) {} showHome(); }
 }
 function showApp(){
   currentBeerId = null;
@@ -991,7 +1064,7 @@ async function load(){
     row.appendChild(div("sub", [ci.beers.brewery_name, ci.serving_style, ci.venue_name, fmtDate(ci.checked_in_at),
       ci.rating != null ? parseFloat(ci.rating).toFixed(2) : null].filter(Boolean).join(", ")));
     if (ci.notes) row.appendChild(div("note", ci.notes));
-    row.addEventListener("click", () => openBeer(ci.beer_id));
+    row.addEventListener("click", () => goBeer(ci.beer_id, "app"));
     box.appendChild(row);
   });
 }
@@ -1008,7 +1081,7 @@ function renderBeerList(){
     row.appendChild(top);
     row.appendChild(div("sub", [beer.brewery_name, beer.style, countText(s ? s.n : 0),
       avg != null ? "avg " + avg.toFixed(2) : null].filter(Boolean).join(", ")));
-    row.addEventListener("click", () => openBeer(beer.id));
+    row.addEventListener("click", () => goBeer(beer.id, "app"));
     box.appendChild(row);
   });
 }
@@ -1093,11 +1166,7 @@ async function openBeer(id, from){
     $("dList").appendChild(row);
   });
 }
-$("backBtn").addEventListener("click", () => {
-  if (detailFrom === "stats"){ currentBeerId = null; setView("stats"); window.scrollTo(0, window.statsScroll || 0); }
-  else if (detailFrom === "home"){ currentBeerId = null; setView("home"); window.scrollTo(0, 0); }
-  else showApp();
-});
+$("backBtn").addEventListener("click", () => back());
 $("logAgain").addEventListener("click", () => {
   const b = beers.find(x => x.id === currentBeerId);
   showApp(); if (b) fillBF("b", b);
@@ -1195,6 +1264,7 @@ function normBarcode(x){
 let scanner = null, torch = null, torchOn = false, handling = false;
 
 async function openScanner(){
+  pushState({ view: "overlay" });
   $("scanner").classList.remove("hidden"); $("manualCode").value = "";
   setMsg($("scanStatus"), "Starting camera...");
   if (typeof Html5Qrcode === "undefined"){
@@ -1226,6 +1296,7 @@ async function onCode(code){
   if (handling) return;
   handling = true;
   if (navigator.vibrate) navigator.vibrate(80);
+  back();
   await closeScanner();
   await lookupBarcode(code);
   handling = false;
@@ -1298,7 +1369,7 @@ function applyOFF(code, p){
 }
 
 $("scanBtn").addEventListener("click", openScanner);
-$("scanClose").addEventListener("click", closeScanner);
+$("scanClose").addEventListener("click", () => back());
 $("manualGo").addEventListener("click", () => { const v = $("manualCode").value; if (v.trim()) onCode(v); });
 $("manualCode").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("manualGo").click(); } });
 $("torchBtn").addEventListener("click", async () => {
@@ -1313,7 +1384,7 @@ $("scopeTabs").addEventListener("click", e => {
 $("nav").addEventListener("click", e => {
   const t = e.target.closest(".tab"); if (!t) return;
   const v = t.dataset.view;
-  if (v === "app") showApp(); else if (v === "home") showHome(); else { currentBeerId = null; setView(v); window.scrollTo(0, 0); }
+  if (v === "app") goApp(); else if (v === "home") goHome(); else goView(v);
 });
 
 db.auth.getSession().then(({ data }) => show(data.session));

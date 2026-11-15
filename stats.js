@@ -300,7 +300,7 @@ function beerRow(rank, t){
   const sub = [t.beer.brewery_name, t.beer.style].filter(Boolean).join(", ");
   if (sub) row.appendChild(el("div", "sub", sub));
   row.appendChild(el("div", "sub", countText(t.n) + (t.rated !== t.n ? " (" + t.rated + " rated)" : "")));
-  row.addEventListener("click", () => { window.statsScroll = window.scrollY; openBeer(t.id, "stats"); });
+  row.addEventListener("click", () => { window.statsScroll = window.scrollY; (typeof goBeer === "function" ? goBeer : openBeer)(t.id, "stats"); });
   return row;
 }
 
