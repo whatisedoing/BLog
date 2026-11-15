@@ -116,12 +116,13 @@ body.onhome #signout{border-color:transparent;padding:6px 0;font-size:.82rem}
 /* ---------- home ---------- */
 #home{display:flex;flex-direction:column;min-height:calc(100vh - 150px)}
 body.onhome{overflow:hidden;padding-bottom:0}
-body.onhome #home{min-height:0;overflow:hidden;
+body.onhome #home{min-height:0;overflow:visible;padding-bottom:16px;
   height:calc(100vh - var(--chrome, 126px) - env(safe-area-inset-top));
   height:calc(100dvh - var(--chrome, 126px) - env(safe-area-inset-top))}
+body.onhome header{position:relative;z-index:2}
 #home .sign{text-align:center;margin:clamp(2px,1.6dvh,18px) 0 0;position:relative}
-#home .sign:before{content:"";position:absolute;left:50%;top:-70px;transform:translateX(-50%);
-  width:420px;height:300px;pointer-events:none;
+#home .sign:before{content:"";position:absolute;left:50%;top:-96px;transform:translateX(-50%);
+  width:440px;height:330px;pointer-events:none;z-index:-1;
   background:radial-gradient(50% 44% at 50% 40%,rgba(74,170,125,.26),rgba(255,180,70,.08) 52%,transparent 74%)}
 #home .frame{position:relative;display:inline-block;padding:7px;border-radius:19px;
   background:linear-gradient(168deg,#e8c88c,#8f6c31 45%,#d7b06a 72%,#7d5d28);
