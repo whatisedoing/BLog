@@ -185,6 +185,159 @@ body.onhome header{position:relative;z-index:2}
 #menu .msg{padding:0 12px 8px;font-size:.8rem}
 #menu .msg:empty{display:none;padding:0;min-height:0}
 #scrim{position:fixed;inset:0;z-index:7;background:rgba(10,7,5,.35)}
+
+/* ---------- search ---------- */
+body.onsearch{overflow:hidden}
+#search{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+  background:
+  repeating-linear-gradient(0deg,rgba(0,0,0,.36) 0 1px,rgba(255,255,255,.02) 1px 2px,transparent 2px 88px),
+  repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 3px,transparent 3px 11px),
+  linear-gradient(165deg,#271c14 0%,#1a120d 48%,#110c08 100%)}
+#search .stop{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;flex:none}
+#search .stop h1{flex:1;text-align:center;font-size:1.1rem;color:var(--parchment);margin:0}
+#search .x{width:38px;height:38px;flex:none;margin:0;padding:0;border-radius:50%;border:1px solid var(--line);
+  background:rgba(36,26,19,.8);display:grid;place-items:center;color:var(--muted)}
+#search .x svg{width:17px;height:17px;fill:currentColor}
+#search .sp{width:38px;flex:none}
+#sBody{flex:1;min-height:0;overflow-y:auto;padding:0 16px 6px;display:flex;flex-direction:column;justify-content:flex-end;gap:15px}
+#search .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+#search .lab .t{font-size:.63rem;letter-spacing:3.2px;text-transform:uppercase;color:var(--muted);font-family:system-ui,sans-serif}
+#search .lab .a{font-size:.63rem;letter-spacing:2.4px;text-transform:uppercase;color:var(--brass);font-family:system-ui,sans-serif}
+#search .srow{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 8px;padding:9px 14px 9px 9px;text-align:left;
+  border:1px solid rgba(209,160,73,.42);border-radius:16px;background:rgba(32,23,16,.72);color:inherit;font-size:1rem}
+#search .srow:last-child{margin-bottom:0}
+#search .srow:hover{background:rgba(46,34,25,.85);border-color:rgba(209,160,73,.7)}
+#search .th{width:42px;height:42px;border-radius:11px;flex:none;overflow:hidden;display:grid;place-items:center;
+  background:linear-gradient(160deg,#2c2118,#191209);border:1px solid rgba(209,160,73,.2)}
+#search .th img{width:100%;height:100%;object-fit:cover}
+#search .th svg{width:24px;height:32px;opacity:.45}
+#search .tx{flex:1;min-width:0}
+#search .tx .n{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--parchment)}
+#search .tx .m{font-size:.76rem;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:system-ui,sans-serif}
+#search .rt{font-size:.82rem;color:var(--brass);white-space:nowrap;flex:none;text-align:right;font-family:system-ui,sans-serif}
+#search .rt small{display:block;font-size:.68rem;color:var(--muted)}
+#search .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#search .bp{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;margin:0;padding:11px 14px;
+  border:1px solid rgba(209,160,73,.42);border-radius:999px;background:rgba(32,23,16,.6);min-width:0;color:inherit;text-align:left}
+#search .bp:hover{background:rgba(46,34,25,.85)}
+#search .bp b{font-weight:normal;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Georgia,serif}
+#search .bp i{font-style:normal;font-size:.72rem;color:var(--muted);flex:none;font-family:system-ui,sans-serif}
+/* dropdown */
+#sDrop{flex:1;min-height:0;margin:0 16px 2px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+#sRes{overflow-y:auto;padding:2px 0 8px}
+#sRes .gl{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin:12px 0 7px;font-family:system-ui,sans-serif}
+#sRes .gl:first-child{margin-top:0}
+#sRes .note{color:var(--muted);font-size:.84rem;padding:4px 2px 2px}
+#sAdd{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin:0;padding:13px;border-radius:14px;
+  border:1px solid rgba(209,160,73,.75);background:linear-gradient(180deg,#36604e,#1f3a30);color:var(--brass);font-size:.92rem;flex:none}
+#sInput::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+#sAdd svg{width:16px;height:16px;fill:currentColor;flex:none}
+#sAdd b{font-weight:normal;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* dock */
+#search .sdock{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom) + 14px);
+  background:linear-gradient(180deg,rgba(17,12,8,0),rgba(17,12,8,.92) 28%,#110c08)}
+#search .sbar{display:flex;align-items:center;border-radius:999px;overflow:hidden;
+  background:linear-gradient(180deg,#e9bf6d,#c9933c);
+  box-shadow:0 1px 0 rgba(255,255,255,.42) inset,0 -2px 0 rgba(0,0,0,.26) inset,0 10px 26px rgba(201,147,60,.26)}
+#sInput{flex:1;min-width:0;margin:0;border:none;background:none;border-radius:0;
+  padding:16px 6px 16px 22px;font-family:Georgia,"Palatino Linotype",Palatino,serif;font-size:1.02rem;letter-spacing:.4px;color:#2a1c08}
+#sInput::placeholder{color:#6b5021}
+#sInput:focus{outline:none;box-shadow:none}
+#search .sdiv{width:1px;align-self:stretch;margin:9px 0;background:rgba(27,18,9,.26);flex:none}
+#sScan{width:62px;flex:none;align-self:stretch;margin:0;padding:0;border:none;background:none;border-radius:0;
+  display:grid;place-items:center;color:#2a1c08}
+#sScan svg{width:30px;height:26px;fill:currentColor}
+#sHint{margin-top:9px;text-align:center;font-size:.72rem;color:var(--muted);font-family:system-ui,sans-serif}
+
+/* ---------- check-in page ---------- */
+#ci{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;
+  background:linear-gradient(165deg,#271c14 0%,#1a120d 48%,#110c08 100%)}
+#ci .ciscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#ci .cipad{padding:0 16px 18px}
+#ci .ciban{position:relative;height:252px;overflow:hidden;background:
+  radial-gradient(76% 64% at 50% 20%,rgba(255,214,150,.3),transparent 72%),linear-gradient(170deg,#3f2d19,#1f160e 60%,#120c08)}
+#ci .fall{position:absolute;left:50%;top:26px;transform:translateX(-50%);width:176px;height:236px}
+#ci .fall svg{width:100%;height:100%}
+#ci #ciPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#ci .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,7,4,.62) 0 18%,rgba(10,7,4,.08) 42%,rgba(17,12,8,.92) 88%,#110c08)}
+#ci .cibar{position:absolute;top:calc(env(safe-area-inset-top) + 12px);left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#ci .x{width:38px;height:38px;flex:none;margin:0;padding:0;border-radius:50%;background:rgba(10,7,5,.55);
+  border:1px solid rgba(255,255,255,.18);color:#f1e2c4;display:grid;place-items:center}
+#ci .x svg{width:18px;height:18px;fill:currentColor}
+#ci .whenwrap{position:relative;display:flex;align-items:center;gap:4px;padding:8px 12px;border-radius:999px;
+  background:rgba(10,7,5,.55);border:1px solid rgba(255,255,255,.18);color:#e4d6ba;font-size:.78rem;white-space:nowrap}
+#ci .whenwrap .cv{width:13px;height:13px;fill:currentColor;opacity:.8}
+#ci .whenwrap #when{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:none;
+  opacity:0;background:none;color:transparent}
+#ci .cicam{position:absolute;right:16px;top:150px;width:46px;height:46px;border-radius:50%;background:rgba(10,7,5,.6);
+  border:1px solid rgba(209,160,73,.6);display:grid;place-items:center;color:var(--brass);cursor:pointer}
+#ci .cicam svg{width:21px;height:21px}
+#ci .cirm{position:absolute;right:16px;top:204px;width:auto;margin:0;padding:6px 11px;border-radius:999px;
+  background:rgba(10,7,5,.6);border:1px solid rgba(209,160,73,.45);color:var(--brass);font-size:.68rem;letter-spacing:.6px}
+#ci .ciid{position:absolute;left:16px;right:70px;bottom:12px}
+#ci .ciid .n{font-size:1.55rem;line-height:1.15;color:var(--parchment);text-shadow:0 2px 14px rgba(0,0,0,.8);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#ci .ciid .b{font-size:.84rem;color:#cdbb9c;margin-top:3px;font-family:system-ui,sans-serif;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ci .cimeta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;
+  font-size:.78rem;color:var(--brass);font-family:system-ui,sans-serif}
+#ci button.link{width:auto;margin:0;padding:3px 0;border:none;background:none;color:var(--brass);
+  font-size:.68rem;letter-spacing:1.6px;text-transform:uppercase;font-family:system-ui,sans-serif}
+#ci #ciFields{margin-top:12px}
+#ci .ratebox{margin-top:14px;background:linear-gradient(180deg,#2a1f16,#201710);border:1px solid rgba(209,160,73,.3);
+  border-radius:16px;padding:15px 16px 14px;text-align:center}
+#ci .rnum{font-size:3.1rem;line-height:1;color:var(--brass);letter-spacing:-1px}
+#ci .rnum em{font-style:normal;font-size:1rem;color:var(--muted);letter-spacing:2px;margin-left:4px}
+#ci #starsOut{display:inline-block;margin-top:8px;font-size:1.4rem;letter-spacing:5px}
+#ci .track{position:relative;height:34px;margin:8px 2px 0}
+#ci .ticks{position:absolute;left:14px;right:14px;top:9px;height:16px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(209,160,73,.45) 0 1px,transparent 1px 10%)}
+#ci input[type=range]{-webkit-appearance:none;appearance:none;position:relative;width:100%;height:34px;margin:0;padding:0;
+  background:none;border:none}
+#ci input[type=range]:focus{outline:none;box-shadow:none}
+#ci input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--brass) 0 var(--p,60%),#4b3a26 var(--p,60%) 100%)}
+#ci input[type=range]::-moz-range-track{height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--brass) 0 var(--p,60%),#4b3a26 var(--p,60%) 100%)}
+#ci input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-14px;border-radius:50%;
+  border:2px solid var(--brass);box-shadow:0 3px 10px rgba(0,0,0,.65);
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23d1a049' d='M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z'/></svg>") center/15px 15px no-repeat,
+    radial-gradient(circle at 36% 30%,#3d6c58,#1f3a30)}
+#ci input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;border:2px solid var(--brass);
+  background:radial-gradient(circle at 36% 30%,#3d6c58,#1f3a30)}
+#ci .ends{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);padding:0 2px;font-family:system-ui,sans-serif}
+#ci .grp{margin-top:16px;background:var(--leather);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+#ci .gr{padding:13px 14px;border-bottom:1px solid var(--leather2)}
+#ci .gr:last-child{border-bottom:none}
+#ci .gh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+#ci .gh .t{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:system-ui,sans-serif}
+#ci #serving{margin:0;grid-template-columns:repeat(6,1fr);gap:6px}
+#ci button.sv{padding:8px 1px 7px;border-radius:11px;border:1px solid rgba(209,160,73,.3);background:rgba(23,17,13,.6);
+  color:var(--parchment);font-size:.56rem;letter-spacing:.2px;text-transform:uppercase;gap:4px}
+#ci button.sv .ic{height:24px}
+#ci button.sv svg{width:21px;height:21px}
+#ci button.sv.on,#ci button.sv.on:hover{background:linear-gradient(180deg,#36604e,#1f3a30);
+  border:2px solid rgba(209,160,73,.85);color:#f3e7d0;padding:7px 0 6px}
+#ci #tags .chip{border-color:rgba(209,160,73,.4);color:var(--parchment)}
+#ci #tags .chip.on,#ci #tags .chip.on:hover{background:linear-gradient(180deg,#36604e,#1f3a30);
+  border:2px solid rgba(209,160,73,.85);color:#f3e7d0;padding:4px 11px}
+#ci #tags{margin:0}
+#ci #notes{margin:0;min-height:76px;background:transparent;border:none;padding:0;font-size:.95rem}
+#ci #notes:focus{outline:none;box-shadow:none}
+#ci #flavSearch{margin-top:10px}
+#ci #venueBox{margin-top:10px}
+#ci #venueBox input{margin-top:0}
+#ci #venueBox input+input{margin-top:8px}
+#ci .cidock{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom) + 14px);
+  background:linear-gradient(180deg,rgba(17,12,8,0),rgba(17,12,8,.95) 30%,#110c08)}
+#ci #saveBtn{margin:0;border:none;border-radius:15px;padding:17px 0;
+  font-family:Georgia,"Palatino Linotype",Palatino,serif;font-weight:bold;font-size:1.1rem;letter-spacing:3px;text-transform:uppercase;
+  color:#1b1209;background:linear-gradient(180deg,#e9bf6d,#c9933c);
+  box-shadow:0 1px 0 rgba(255,255,255,.42) inset,0 -2px 0 rgba(0,0,0,.26) inset,0 10px 26px rgba(201,147,60,.26)}
+#ci #saveMsg{margin-top:8px;text-align:center}
+#ci .offscr{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+#ciVenues .chip.on{background:linear-gradient(180deg,#36604e,#1f3a30);border:2px solid rgba(209,160,73,.85);color:#f3e7d0;padding:7px 13px}
 .hidden{display:none !important}
 </style>
 </head>
@@ -194,6 +347,95 @@ body.onhome header{position:relative;z-index:2}
     <h1>BeerLog</h1>
     <button id="menuBtn" class="quiet hidden" type="button" aria-label="Menu" aria-haspopup="true" aria-expanded="false"></button>
   </header>
+
+  <section id="search" class="hidden">
+    <div class="stop">
+      <button id="sClose" type="button" class="x" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6z"/></svg>
+      </button>
+      <h1>Check in a beer</h1>
+      <div class="sp"></div>
+    </div>
+    <div id="sBody"></div>
+    <div id="sDrop" class="hidden">
+      <div id="sRes"></div>
+      <button id="sAdd" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg><span>Add a beer that isn't listed</span></button>
+    </div>
+    <div class="sdock">
+      <div class="sbar">
+        <input id="sInput" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search beers or breweries">
+        <div class="sdiv"></div>
+        <button id="sScan" type="button" aria-label="Scan a barcode"><svg viewBox="0 0 30 26" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="2.4" height="22" rx="1"/><rect x="5.4" y="2" width="1.2" height="22" rx=".6"/><rect x="8.6" y="2" width="3" height="22" rx="1"/><rect x="13.4" y="2" width="1.4" height="22" rx=".7"/><rect x="17" y="2" width="2.2" height="22" rx="1"/><rect x="21" y="2" width="1.2" height="22" rx=".6"/><rect x="24.2" y="2" width="3.2" height="22" rx="1"/></svg></button>
+      </div>
+      <div id="sHint">Tap the barcode to scan a can or bottle</div>
+    </div>
+  </section>
+
+
+  <section id="ci" class="hidden">
+    <div class="ciscroll">
+      <div class="ciban">
+        <div class="fall">
+          <svg viewBox="0 0 44 58" aria-hidden="true">
+            <defs><linearGradient id="ciL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3bb52"/><stop offset="1" stop-color="#b9731f"/></linearGradient></defs>
+            <path d="M10.5 15.5h23l-2.8 38A4.5 4.5 0 0 1 26.2 58H17.8a4.5 4.5 0 0 1-4.5-4.5z" fill="rgba(255,255,255,.07)"/>
+            <path d="M12 19h20l-2.4 34.5a3.4 3.4 0 0 1-3.4 3.2h-8.4a3.4 3.4 0 0 1-3.4-3.2z" fill="url(#ciL)"/>
+            <path d="M10.5 15.5h23" stroke="rgba(255,248,232,.75)" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M10.5 15.5l2.8 38A4.5 4.5 0 0 0 17.8 58h8.4a4.5 4.5 0 0 0 4.5-4.3l2.8-38" fill="none" stroke="rgba(255,248,232,.5)" stroke-width="1.2"/>
+            <ellipse cx="22" cy="15.5" rx="11.5" ry="3.6" fill="#fdf6e8"/>
+            <ellipse cx="15.5" cy="12.6" rx="5.6" ry="4.4" fill="#fdf6e8"/>
+            <ellipse cx="22.5" cy="10.8" rx="6.6" ry="5.2" fill="#fff"/>
+            <ellipse cx="29" cy="12.8" rx="5.2" ry="4.2" fill="#f6ead3"/>
+            <rect x="15" y="24" width="2.2" height="20" rx="1.1" fill="rgba(255,255,255,.34)"/>
+          </svg>
+        </div>
+        <img id="ciPhoto" class="hidden" alt="">
+        <div class="scrim"></div>
+        <div class="cibar">
+          <button id="ciBack" type="button" class="x" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg></button>
+          <div class="whenwrap"><span id="ciWhen">&nbsp;</span><svg viewBox="0 0 24 24" class="cv" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+            <input id="when" type="datetime-local" aria-label="Date and time of this check-in"></div>
+        </div>
+        <label class="cicam" for="photo" aria-label="Add a photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2.4"/><circle cx="12" cy="13" r="3.4"/><path d="M8 6l1.6-2.4h4.8L16 6"/></svg></label>
+        <button id="ciRm" type="button" class="cirm hidden">Remove photo</button>
+        <div class="ciid"><div class="n" id="ciName">New beer</div><div class="b" id="ciSub"></div></div>
+      </div>
+
+      <div class="cipad">
+        <div class="cimeta"><span id="ciAvg"></span><button id="ciEdit" type="button" class="link">Edit details</button></div>
+
+        <section id="ciFields" class="card hidden">
+          <button id="scanBtn" class="scan" type="button">Scan a barcode</button>
+          <div id="scanNote" class="meta" style="margin-top:8px"></div>
+          <div id="bf"></div>
+        </section>
+
+        <div class="ratebox">
+          <div class="rnum"><span id="ratingNum">3.00</span><em>/ 5</em></div>
+          <span id="starsOut" class="stars" style="--p:60%">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <div class="track"><div class="ticks"></div>
+            <input id="rating" type="range" min="0.25" max="5" step="0.25" value="3" aria-label="Rating"></div>
+          <div class="ends"><span>0</span><span>5</span></div>
+        </div>
+
+        <div class="grp">
+          <div class="gr"><div class="gh"><span class="t">Served as</span></div><div id="serving" class="seg"></div></div>
+          <div class="gr"><div class="gh"><span class="t">How it tasted</span><button id="flavBtn" type="button" class="link">Search</button></div>
+            <div id="tags" class="chips"></div>
+            <input id="flavSearch" class="hidden" autocomplete="off" placeholder="Search for another flavour"></div>
+          <div class="gr"><div class="gh"><span class="t">Note</span></div>
+            <textarea id="notes" placeholder="What did you think?"></textarea></div>
+          <div class="gr"><div class="gh"><span class="t">Where</span></div>
+            <div id="ciVenues" class="chips"></div>
+            <div id="venueBox" class="hidden"><input id="vname" autocomplete="off" placeholder="Bar, restaurant, or home"><input id="vcity" autocomplete="off" placeholder="City"></div></div>
+        </div>
+
+        <div style="display:none"><div id="photoPrev" class="phprev hidden"><img id="photoImg" alt=""><button id="photoClear" type="button" class="quiet">Remove photo</button></div></div>
+      </div>
+    </div>
+    <div class="cidock"><button id="saveBtn">Save check-in</button><div id="saveMsg" class="msg"></div></div>
+    <input id="photo" type="file" accept="image/*" class="offscr">
+  </section>
 
   <section id="home" class="hidden">
     <div class="sign">
@@ -227,45 +469,6 @@ body.onhome header{position:relative;z-index:2}
   </section>
 
   <main id="app" class="hidden">
-    <h2>Log a beer</h2>
-    <section class="card">
-      <button id="scanBtn" class="scan" type="button">Scan a barcode</button>
-      <div id="scanNote" class="meta" style="margin-top:8px"></div>
-      <div id="bf"></div>
-
-      <div class="lbl">Served as</div>
-      <div id="serving" class="seg"></div>
-
-      <label for="vname">Where</label>
-      <input id="vname" autocomplete="off" placeholder="Bar, restaurant, or home">
-      <label for="vcity">Where (city)</label>
-      <input id="vcity" autocomplete="off">
-
-      <label for="when">When</label>
-      <input id="when" type="datetime-local">
-
-      <div class="lbl">Flavours</div>
-      <div id="tags" class="chips"></div>
-      <input id="flavSearch" autocomplete="off" placeholder="Search for another flavour" style="margin-top:10px">
-
-      <label for="rating">Rating</label>
-      <div class="rate">
-        <span id="starsOut" class="stars" style="--p:60%">★★★★★</span>
-        <span id="ratingNum" class="num">3.00</span>
-      </div>
-      <input id="rating" type="range" min="0.25" max="5" step="0.25" value="3">
-
-      <label for="notes">Notes</label>
-      <textarea id="notes" placeholder="Optional"></textarea>
-
-      <label for="photo">Photo</label>
-      <input id="photo" type="file" accept="image/*">
-      <div id="photoPrev" class="phprev hidden"><img id="photoImg" alt="Photo to attach"><button id="photoClear" type="button" class="quiet">Remove photo</button></div>
-
-      <button id="saveBtn">Save check-in</button>
-      <div id="saveMsg" class="msg"></div>
-    </section>
-
     <h2>Recent check-ins</h2>
     <section class="card" id="recent"></section>
 
@@ -416,7 +619,7 @@ function fillBF(p, b){
   $(p + "fam").dataset.manual = (b.style_family && b.style_family !== familyOf(b.style || "")) ? "1" : "";
   meta[p] = { id: b.open_brewery_db_id, lat: b.brewery_lat, lng: b.brewery_lng };
   $(p + "res").textContent = "";
-  if (p === "b") renderFlav();
+  if (p === "b"){ renderFlav(); if (typeof ciRefresh === "function") ciRefresh(); }
 }
 
 function readBF(p){
@@ -510,7 +713,9 @@ function wireBF(p){
 function updateRating(){
   const r = parseFloat($("rating").value);
   $("ratingNum").textContent = r.toFixed(2);
-  $("starsOut").style.setProperty("--p", (r / 5 * 100) + "%");
+  const pct = (r / 5 * 100) + "%";
+  $("starsOut").style.setProperty("--p", pct);
+  $("rating").style.setProperty("--p", pct);
 }
 $("rating").addEventListener("input", updateRating);
 
@@ -534,7 +739,7 @@ const ICON = {
   mdiHome: "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z",
   mdiMenu: "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z",
   mdiChartBar: "M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z",
-  mdiPlusBox: "M17,13H13V17H11V13H7V11H11V7H13V11H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z",
+  mdiListBox: "M7,5H21V7H7V5M7,11H21V13H7V11M7,17H21V19H7V17M3,5H5V7H3V5M3,11H5V13H3V11M3,17H5V19H3V17Z",
   mdiStar: "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z",
   mdiMedal: "M20,2H4V4L9.81,8.36C6.14,9.57 4.14,13.53 5.35,17.2C6.56,20.87 10.5,22.87 14.19,21.66C17.86,20.45 19.86,16.5 18.65,12.82C17.95,10.71 16.3,9.05 14.19,8.36L20,4V2M14.94,19.5L12,17.78L9.06,19.5L9.84,16.17L7.25,13.93L10.66,13.64L12,10.5L13.34,13.64L16.75,13.93L14.16,16.17L14.94,19.5Z"
 };
@@ -794,20 +999,22 @@ function renderBadges(){
 let currentView = "home";
 function setView(v){
   currentView = v;
-  ["home", "app", "detail", "badges", "stats"].forEach(id => $(id).classList.toggle("hidden", id !== v));
-  $("nav").classList.remove("hidden");
+  ["home", "app", "detail", "badges", "stats", "search", "ci"].forEach(id => $(id).classList.toggle("hidden", id !== v));
+  $("nav").classList.toggle("hidden", v === "search");
+  document.body.classList.toggle("onsearch", v === "search");
   document.body.classList.toggle("onhome", v === "home");
-  const tab = v === "detail" ? detailFrom : v;
+  const tab = v === "detail" ? detailFrom : v === "search" ? "app" : v;
   document.querySelectorAll("#nav .tab").forEach(b => b.classList.toggle("on", b.dataset.view === tab));
   if (v === "badges") renderBadges();
   if (v === "stats" && window.renderStats) renderStats();
   if (v === "home") renderHome();
+  if (v === "search") renderSearch();
 }
 
 /* ---------- start-up wiring ---------- */
 $("bf").innerHTML = bfHTML("b"); $("ebf").innerHTML = bfHTML("e");
 wireBF("b"); wireBF("e"); buildServing(); renderFlav(); attachAll();
-[["home", "mdiHome", "Home"], ["app", "mdiPlusBox", "Log"], ["badges", "mdiStar", "Badges"], ["stats", "mdiChartBar", "Stats"]]
+[["home", "mdiHome", "Home"], ["app", "mdiListBox", "Log"], ["badges", "mdiStar", "Badges"], ["stats", "mdiChartBar", "Stats"]]
   .forEach(([v, ic, label]) => {
     const b = document.querySelector('#nav .tab[data-view="' + v + '"]');
     b.innerHTML = svgIcon(ic) + "<span>" + label + "</span>";
@@ -839,7 +1046,8 @@ $("photo").addEventListener("change", async () => {
   setMsg($("saveMsg"), "Preparing photo...");
   try {
     photoBlob = await shrink(f);
-    $("photoImg").src = URL.createObjectURL(photoBlob); $("photoPrev").classList.remove("hidden");
+    const u = URL.createObjectURL(photoBlob);
+    $("photoImg").src = u; $("photoPrev").classList.remove("hidden"); ciSetPhoto(u);
     setMsg($("saveMsg"), "");
   } catch (e){ clearPhoto(); setMsg($("saveMsg"), "Couldn't use that photo: " + e.message, "err"); }
 });
@@ -957,13 +1165,332 @@ function sizeHome(){
 window.addEventListener("resize", sizeHome);
 window.addEventListener("orientationchange", () => setTimeout(sizeHome, 120));
 function showHome(){ currentBeerId = null; setView("home"); window.scrollTo(0, 0); sizeHome(); load(); }
-$("hCheckin").addEventListener("click", () => goApp());
+$("hCheckin").addEventListener("click", () => goSearch());
 $("hAll").addEventListener("click", () => { goApp(); setTimeout(() => $("recent").scrollIntoView({ behavior: "smooth", block: "start" }), 80); });
 document.querySelectorAll("#home .pill").forEach(b => b.addEventListener("click", () => {
   const go = b.dataset.go;
   if (go === "beers"){ goApp(); setTimeout(() => $("beerList").scrollIntoView({ behavior: "smooth", block: "start" }), 80); }
   else goView(go);
 }));
+
+/* ---------- search: pick a beer before checking in ---------- */
+function signPhotos(paths){
+  if (!paths.length) return Promise.resolve({});
+  return db.storage.from("photos").createSignedUrls(paths, 3600).then(su => {
+    const urls = {};
+    if (!su.error && su.data) su.data.forEach(x => { if (x.signedUrl && x.path) urls[x.path] = x.signedUrl; });
+    return urls;
+  }).catch(() => ({}));
+}
+function thumb(path){
+  const t = div("th"); t.innerHTML = GLASS_SIL;
+  if (path) t.dataset.path = path;
+  return t;
+}
+function fillThumbs(root){
+  const want = [...root.querySelectorAll(".th[data-path]")];
+  if (!want.length) return;
+  signPhotos([...new Set(want.map(t => t.dataset.path))]).then(urls => {
+    want.forEach(t => {
+      const u = urls[t.dataset.path]; if (!u) return;
+      const img = document.createElement("img"); img.alt = "";
+      img.onload = () => { t.innerHTML = ""; t.appendChild(img); };
+      img.src = u;
+    });
+  });
+}
+function srow(beer, photo, right, sub){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "srow";
+  b.appendChild(thumb(photo));
+  const tx = div("tx");
+  tx.appendChild(div("n", beer.name || "Unknown beer"));
+  tx.appendChild(div("m", sub != null ? sub : (beer.brewery_name || "")));
+  b.appendChild(tx);
+  if (right){ const r = div("rt"); r.innerHTML = right; b.appendChild(r); }
+  b.addEventListener("click", () => pickBeer(beer));
+  return b;
+}
+function groupLabel(parent, text, link, onLink){
+  const l = div("lab"); l.appendChild(div("t", text));
+  if (link){ const a = div("a", link); a.style.cursor = "pointer"; a.addEventListener("click", onLink); l.appendChild(a); }
+  parent.appendChild(l);
+}
+function beerStats(){
+  const byId = {}; beers.forEach(b => { byId[b.id] = b; });
+  const st = {};
+  allCk.forEach(c => {
+    const t = st[c.beer_id] || (st[c.beer_id] = { n: 0, sum: 0, rated: 0, last: "", photo: "" });
+    t.n++;
+    if (c.rating != null){ t.sum += parseFloat(c.rating); t.rated++; }
+    if (c.checked_in_at > t.last) t.last = c.checked_in_at;
+    if (c.photo_url && !t.photo) t.photo = c.photo_url;
+  });
+  return { byId: byId, st: st };
+}
+function breweryCounts(byId){
+  const bc = {};
+  allCk.forEach(c => { const n = (byId[c.beer_id] || {}).brewery_name; if (n) bc[n] = (bc[n] || 0) + 1; });
+  return bc;
+}
+function breweryPill(name, count){
+  const b = document.createElement("button"); b.type = "button"; b.className = "bp";
+  const t = document.createElement("b"); t.textContent = name;
+  const i = document.createElement("i"); i.textContent = count;
+  b.appendChild(t); b.appendChild(i);
+  b.addEventListener("click", () => { $("sInput").value = name; runSearch(); });
+  return b;
+}
+function renderSearch(){
+  const box = $("sBody"); box.innerHTML = ""; box.classList.remove("hidden");
+  $("sDrop").classList.add("hidden");
+  const { byId, st } = beerStats();
+  if (!beers.length){
+    box.appendChild(div("empty", "Search for a beer, or scan a barcode, to log your first check-in."));
+    return;
+  }
+  const bc = breweryCounts(byId);
+  const brews = Object.keys(bc).sort((a, b) => bc[b] - bc[a] || a.localeCompare(b));
+  if (brews.length){
+    const g = div();
+    groupLabel(g, "Your breweries", "All " + brews.length, () => $("sInput").focus());
+    const grid = div("bgrid");
+    brews.slice(0, 6).forEach(name => grid.appendChild(breweryPill(name, bc[name])));
+    g.appendChild(grid); box.appendChild(g);
+  }
+  const often = Object.keys(st).filter(id => st[id].n > 1 && byId[id])
+    .sort((a, b) => st[b].n - st[a].n || (st[b].last > st[a].last ? 1 : -1)).slice(0, 3);
+  if (often.length){
+    const g = div();
+    groupLabel(g, "You drink these often");
+    often.forEach(id => {
+      const t = st[id];
+      const right = (t.rated ? "★ " + (t.sum / t.rated).toFixed(2) : "") + "<small>" + t.n + (t.n === 1 ? " check-in" : " check-ins") + "</small>";
+      g.appendChild(srow(byId[id], t.photo, right));
+    });
+    box.appendChild(g);
+  }
+  const recent = [...allCk].sort((a, b) => a.checked_in_at < b.checked_in_at ? 1 : a.checked_in_at > b.checked_in_at ? -1 : 0).slice(0, 3);
+  if (recent.length){
+    const g = div();
+    groupLabel(g, "Lately");
+    recent.forEach(c => {
+      const beer = byId[c.beer_id]; if (!beer) return;
+      const right = (c.rating != null ? "★ " + parseFloat(c.rating).toFixed(2) : "") + "<small>" + fmtDate(c.checked_in_at) + "</small>";
+      g.appendChild(srow(beer, c.photo_url, right));
+    });
+    box.appendChild(g);
+  }
+  fillThumbs(box);
+}
+/* ---------- typing ---------- */
+let sTimer = null, sSeq = 0;
+function setAddLabel(q){
+  $("sAdd").querySelector("span").textContent =
+    q ? 'Add "' + (q.length > 24 ? q.slice(0, 24) + "…" : q) + '" as a new beer' : "Add a beer that isn't listed";
+}
+function runSearch(){
+  const raw = $("sInput").value.trim(), q = raw.toLowerCase();
+  setAddLabel(raw);
+  if (!q){ $("sDrop").classList.add("hidden"); renderSearch(); return; }
+  $("sBody").classList.add("hidden"); $("sDrop").classList.remove("hidden");
+  const res = $("sRes"); res.innerHTML = "";
+  const { byId, st } = beerStats();
+  const digits = raw.replace(/\D/g, "");
+  const seq = ++sSeq;
+  const off = div(); off.id = "sOff";
+  const bc = breweryCounts(byId);
+  const brews = Object.keys(bc).filter(n => n.toLowerCase().includes(q)).sort((a, b) => bc[b] - bc[a]).slice(0, 4);
+  if (brews.length){
+    const g = div(); g.appendChild(div("gl", "Your breweries"));
+    const grid = div("bgrid");
+    brews.forEach(name => grid.appendChild(breweryPill(name, bc[name])));
+    g.appendChild(grid); res.appendChild(g);
+  }
+  const mine = beerMatches(q).slice(0, 6);
+  if (mine.length){
+    const g = div(); g.appendChild(div("gl", "Your beers"));
+    mine.forEach(m => {
+      const t = st[m.beer.id] || { n: 0, rated: 0, sum: 0, photo: "" };
+      const right = (t.rated ? "★ " + (t.sum / t.rated).toFixed(2) : "") + (t.n ? "<small>" + t.n + (t.n === 1 ? " check-in" : " check-ins") + "</small>" : "");
+      g.appendChild(srow(m.beer, t.photo, right));
+    });
+    res.appendChild(g); fillThumbs(g);
+  }
+  if (digits.length >= 8){
+    const g = div(); g.appendChild(div("gl", "Barcode"));
+    const b = document.createElement("button"); b.type = "button"; b.className = "srow";
+    b.appendChild(thumb(""));
+    const tx = div("tx");
+    tx.appendChild(div("n", "Look up " + digits));
+    tx.appendChild(div("m", "Search Open Food Facts by barcode"));
+    b.appendChild(tx);
+    b.addEventListener("click", () => { goCheckin(null); lookupBarcode(digits); });
+    g.appendChild(b); res.appendChild(g);
+  }
+  if (!mine.length && !brews.length && digits.length < 8) res.appendChild(div("note", "Nothing in your own beers matches that."));
+  res.appendChild(off);
+  clearTimeout(sTimer);
+  if (q.length >= 3 && digits.length < 8){
+    off.appendChild(div("gl", "Open Food Facts"));
+    off.appendChild(div("note", "Searching…"));
+    sTimer = setTimeout(() => offSearch(raw, seq), 450);
+  }
+}
+async function offSearch(q, seq){
+  let products = null, failed = false;
+  try {
+    const url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=" + encodeURIComponent(q) +
+      "&tagtype_0=categories&tag_contains_0=contains&tag_0=beers&json=1&page_size=8" +
+      "&fields=code,product_name,brands,quantity";
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("status " + r.status);
+    const d = await r.json();
+    products = (d.products || []).filter(x => x.product_name && x.code);
+  } catch (e) { failed = true; }
+  if (seq !== sSeq) return;
+  const off = $("sOff"); if (!off) return;
+  off.innerHTML = "";
+  off.appendChild(div("gl", "Open Food Facts"));
+  if (failed){ off.appendChild(div("note", "Couldn't reach Open Food Facts just now.")); return; }
+  if (!products.length){ off.appendChild(div("note", "Nothing there either — add it below and it's yours from now on.")); return; }
+  products.slice(0, 5).forEach(pr => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "srow";
+    b.appendChild(thumb(""));
+    const tx = div("tx");
+    tx.appendChild(div("n", pr.product_name));
+    tx.appendChild(div("m", [(pr.brands || "").split(",")[0].trim(), pr.quantity].filter(Boolean).join(" · ")));
+    b.appendChild(tx);
+    b.addEventListener("click", () => { goCheckin(null); lookupBarcode(pr.code); });
+    off.appendChild(b);
+  });
+}
+/* ---------- the check-in page ---------- */
+function fmtWhenChip(v){
+  const d = v ? new Date(v) : new Date();
+  if (isNaN(d.getTime())) return "Now";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " \u00b7 " +
+         d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+function ciRefresh(){
+  const name = $("bname").value.trim(), brew = $("bbrewery").value.trim();
+  const style = $("bstyle").value.trim(), abv = $("babv").value.trim();
+  $("ciName").textContent = name || "New beer";
+  $("ciSub").textContent = [brew, style, abv ? abv + "%" : ""].filter(Boolean).join(" \u00b7 ") || "Fill in the details below";
+  $("ciWhen").textContent = fmtWhenChip($("when").value);
+  const beer = name ? beers.find(x => x.name.toLowerCase() === name.toLowerCase() &&
+    (x.brewery_name || "").toLowerCase() === brew.toLowerCase()) : null;
+  let txt = "";
+  if (beer){
+    const ck = allCk.filter(c => c.beer_id === beer.id), rated = ck.filter(c => c.rating != null);
+    if (rated.length){
+      const avg = rated.reduce((t, c) => t + parseFloat(c.rating), 0) / rated.length;
+      txt = "Your average " + avg.toFixed(2) + " \u00b7 " + ck.length + (ck.length === 1 ? " check-in" : " check-ins");
+    } else if (ck.length) txt = ck.length + (ck.length === 1 ? " check-in" : " check-ins") + ", not rated";
+  } else if (name) txt = "First time for this one";
+  $("ciAvg").textContent = txt;
+  venuePills();
+}
+function setVenue(name){
+  const cur = $("vname").value.trim();
+  const k = x => x.toLowerCase().replace(/[^a-z0-9]/g, "");
+  $("vname").value = (k(cur) === k(name)) ? "" : name;
+  const c = venues[$("vname").value.trim()];
+  if (c && !$("vcity").value.trim()) $("vcity").value = c;
+  venuePills();
+}
+function venuePills(){
+  const box = $("ciVenues"); if (!box) return;
+  box.innerHTML = "";
+  const cur = $("vname").value.trim();
+  const counts = {};
+  allCk.forEach(c => { const v = (c.venue_name || "").trim(); if (v) counts[v] = (counts[v] || 0) + 1; });
+  const list = ["Home"];
+  const brew = $("bbrewery").value.trim();
+  const key = n => n.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const has = n => list.some(x => key(x) === key(n));
+  if (brew && !has(brew)) list.push(brew);
+  Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b)).forEach(v => {
+    if (list.length < 4 && !has(v)) list.push(v);
+  });
+  if (cur && !has(cur)) list.push(cur);
+  list.forEach(name => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip" + (cur && key(cur) === key(name) ? " on" : "");
+    b.textContent = name;
+    b.addEventListener("click", () => setVenue(name));
+    box.appendChild(b);
+  });
+  const more = document.createElement("button");
+  more.type = "button"; more.className = "chip";
+  more.style.borderStyle = "dashed"; more.style.color = "var(--brass)";
+  more.textContent = $("venueBox").classList.contains("hidden") ? "Search venues" : "Hide search";
+  more.addEventListener("click", () => {
+    const vb = $("venueBox"), hid = vb.classList.contains("hidden");
+    vb.classList.toggle("hidden", !hid);
+    venuePills();
+    if (hid) $("vname").focus();
+  });
+  box.appendChild(more);
+}
+function ciSetPhoto(url){
+  const img = $("ciPhoto");
+  img.classList.toggle("hidden", !url);
+  $("ciRm").classList.toggle("hidden", !url);
+  if (url) img.src = url;
+}
+function resetCheckin(){
+  fillBF("b"); $("bmore").open = false; $("scanNote").textContent = "";
+  ["vname", "vcity", "notes"].forEach(id => { $(id).value = ""; });
+  clearPhoto(); ciSetPhoto(null); setServing(""); selFlav.clear();
+  $("flavSearch").value = ""; $("flavSearch").classList.add("hidden"); $("flavBtn").textContent = "Search";
+  $("venueBox").classList.add("hidden");
+  $("ciFields").classList.add("hidden"); $("ciEdit").textContent = "Edit details";
+  renderFlav();
+  $("rating").value = 3; updateRating();
+  $("when").value = nowLocal();
+  setMsg($("saveMsg"), ""); $("saveBtn").disabled = false;
+}
+function openCheckin(beer, typed){
+  resetCheckin();
+  if (beer) fillBF("b", beer);
+  else {
+    if (typed && !/^\d{8,}$/.test(typed)) $("bname").value = typed;
+    $("ciFields").classList.remove("hidden"); $("ciEdit").textContent = "Hide details";
+  }
+  ciRefresh();
+  setView("ci");
+  const sc = document.querySelector("#ci .ciscroll"); if (sc) sc.scrollTop = 0;
+}
+function goCheckin(beer, typed){ pushState({ view: "ci" }); openCheckin(beer, typed); }
+$("ciBack").addEventListener("click", () => back());
+$("ciEdit").addEventListener("click", () => {
+  const f = $("ciFields"), hid = f.classList.contains("hidden");
+  f.classList.toggle("hidden", !hid);
+  $("ciEdit").textContent = hid ? "Hide details" : "Edit details";
+});
+$("ciFields").addEventListener("input", () => ciRefresh());
+$("when").addEventListener("change", () => { $("ciWhen").textContent = fmtWhenChip($("when").value); });
+$("flavBtn").addEventListener("click", () => {
+  const i = $("flavSearch"), hid = i.classList.contains("hidden");
+  i.classList.toggle("hidden", !hid);
+  $("flavBtn").textContent = hid ? "Hide search" : "Search";
+  if (hid) i.focus();
+});
+$("ciRm").addEventListener("click", () => { clearPhoto(); ciSetPhoto(null); });
+
+/* ---------- picking ---------- */
+function pickBeer(beer){ goCheckin(beer); }
+function goSearch(){ pushState({ view: "search" }); setView("search"); }
+$("sClose").addEventListener("click", () => back());
+$("sScan").addEventListener("click", () => openScanner());
+$("sInput").addEventListener("input", runSearch);
+$("sAdd").addEventListener("click", () => {
+  const raw = $("sInput").value.trim();
+  goCheckin(null, raw);
+  scanNote("A new beer. Fill in what you know \u2014 typing the brewery looks up its details.");
+  setTimeout(() => $("bname").focus(), 140);
+});
 
 /* ---------- menu ---------- */
 $("menuBtn").innerHTML = svgIcon("mdiMenu");
@@ -997,6 +1524,7 @@ function applyState(st){
   if (st.view === currentView && st.view !== "detail") return;
   if (st.view === "detail" && st.beer){ openBeer(st.beer, st.from || "app"); return; }
   if (st.view === "app"){ showApp(); return; }
+  if (st.view === "ci"){ setView("ci"); return; }
   if (st.view === "home"){ showHome(); return; }
   currentBeerId = null; setView(st.view); window.scrollTo(0, 0);
 }
@@ -1012,14 +1540,14 @@ function show(session){
   const was = signedIn; signedIn = !!session; currentUserId = session && session.user ? session.user.id : null;
   $("login").classList.toggle("hidden", signedIn);
   $("menuBtn").classList.toggle("hidden", !signedIn);
-  if (!signedIn){ ["home", "app", "detail", "badges", "stats", "nav", "menu", "scrim"].forEach(id => $(id).classList.add("hidden"));
+  if (!signedIn){ ["home", "app", "detail", "badges", "stats", "search", "ci", "nav", "menu", "scrim"].forEach(id => $(id).classList.add("hidden"));
     document.body.classList.remove("onhome"); currentBeerId = null; return; }
   if (!was){ try { history.replaceState({ view: "home" }, ""); } catch (e) {} showHome(); }
 }
 function showApp(){
   currentBeerId = null;
   setView("app");
-  $("when").value = nowLocal(); updateRating(); window.scrollTo(0, 0); load();
+  window.scrollTo(0, 0); load();
 }
 
 $("loginBtn").addEventListener("click", async () => {
@@ -1170,7 +1698,7 @@ async function openBeer(id, from){
 $("backBtn").addEventListener("click", () => back());
 $("logAgain").addEventListener("click", () => {
   const b = beers.find(x => x.id === currentBeerId);
-  showApp(); if (b) fillBF("b", b);
+  if (b) goCheckin(b); else goSearch();
 });
 $("editBtn").addEventListener("click", () => {
   const b = beers.find(x => x.id === currentBeerId); if (!b) return;
@@ -1242,13 +1770,14 @@ $("saveBtn").addEventListener("click", async () => {
     });
     if (ck.error){ if (photoPath) await db.storage.from("photos").remove([photoPath]); throw ck.error; }
 
-    fillBF("b"); $("bmore").open = false; $("scanNote").textContent = "";
-    ["vname","vcity","notes"].forEach(id => { $(id).value = ""; });
-    clearPhoto(); setServing(""); selFlav.clear(); $("flavSearch").value = ""; renderFlav();
-    $("rating").value = 3; updateRating(); $("when").value = nowLocal();
     await load();
     const gained = newBadgeNames(before);
     setMsg($("saveMsg"), "Check-in saved." + (gained.length ? " New badge: " + gained.join(", ") + "." : ""), "ok");
+    setTimeout(() => {
+      resetCheckin();
+      try { history.replaceState({ view: "home" }, ""); } catch (e) {}
+      showHome();
+    }, 1200);
   } catch (e){
     setMsg($("saveMsg"), "Could not save: " + e.message, "err");
   }
@@ -1326,13 +1855,25 @@ async function lookupBarcode(raw){
     const data = (r.ok || r.status === 404) ? await r.json().catch(() => null) : null;
     if (!r.ok && r.status !== 404) throw new Error("status " + r.status);
     if (!data || !data.product || data.status === 0){
-      scanNote("Not in Open Food Facts yet. Fill in the beer's details by hand. The barcode will be saved, so next time it's instant.");
+      scanNote("Not in Open Food Facts yet. Fill in the beer's details by hand \u2014 the barcode is saved, so next time it's instant.");
+      offerToAdd(code);
       $("bname").focus(); return;
     }
     applyOFF(code, data.product);
   } catch (e){
     scanNote("Couldn't reach Open Food Facts. Fill in the details by hand. The barcode will still be saved.");
   }
+}
+
+function offerToAdd(code){
+  const box = $("scanNote");
+  box.appendChild(document.createElement("br"));
+  const a = document.createElement("a");
+  a.href = "https://world.openfoodfacts.org/cgi/product.pl?type=add&code=" + encodeURIComponent(code);
+  a.target = "_blank"; a.rel = "noopener";
+  a.textContent = "Add this beer to Open Food Facts";
+  box.appendChild(a);
+  box.appendChild(document.createTextNode(" so every scanner finds it next time."));
 }
 
 function applyOFF(code, p){
