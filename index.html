@@ -338,6 +338,9 @@ body.onsearch{overflow:hidden}
 #ci #saveMsg{margin-top:8px;text-align:center}
 #ci .offscr{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 #ciVenues .chip.on{background:linear-gradient(180deg,#36604e,#1f3a30);border:2px solid rgba(209,160,73,.85);color:#f3e7d0;padding:7px 13px}
+button.taglink{width:auto;margin:0;padding:0;border:none;background:none;color:var(--brass);font-size:inherit;
+  font-family:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(209,160,73,.45)}
+button.taglink:hover{background:none;text-decoration-color:var(--brass)}
 .hidden{display:none !important}
 </style>
 </head>
@@ -497,7 +500,7 @@ body.onsearch{overflow:hidden}
 
   <section id="stats" class="hidden">
     <h2 style="margin-top:0">Statistics</h2>
-    <div id="stTabs" class="tabs" style="margin-top:0"><button class="tab quiet on" data-st="overview">Overview</button><button class="tab quiet" data-st="top">Top rated</button><button class="tab quiet" data-st="year">Year in review</button></div>
+    <div id="stTabs" class="tabs" style="margin-top:0"><button class="tab quiet on" data-st="overview">Overview</button><button class="tab quiet" data-st="top">Top rated</button><button class="tab quiet" data-st="tags">Tags</button><button class="tab quiet" data-st="flavour">Flavours</button><button class="tab quiet" data-st="year">Year in review</button></div>
     <div id="stBody"></div>
   </section>
 
@@ -1521,6 +1524,7 @@ function applyState(st){
   const wasOverlay = overlayOpen();
   closeOverlays();
   if (!st || !st.view || st.view === "overlay"){ if (signedIn && !wasOverlay) showHome(); return; }
+  if (st.view === "stats" && window.statsApply) window.statsApply(st);
   if (st.view === currentView && st.view !== "detail") return;
   if (st.view === "detail" && st.beer){ openBeer(st.beer, st.from || "app"); return; }
   if (st.view === "app"){ showApp(); return; }
@@ -1617,6 +1621,17 @@ function renderBeerList(){
 
 /* ---------- the beer page ---------- */
 function addLine(parent, label, text){ if (text) parent.appendChild(div("meta", label + ": " + text)); }
+function addTagLine(parent, label, text, dim, val){
+  if (!text) return;
+  const row = div("meta"); row.appendChild(document.createTextNode(label + ": "));
+  const a = document.createElement("button");
+  a.type = "button"; a.className = "taglink"; a.textContent = text;
+  a.addEventListener("click", () => {
+    if (window.statsOpenTag){ statsOpenTag(dim, val); currentBeerId = null; pushState({ view: "stats", tab: "tags", tagDim: dim, tagVal: val }); setView("stats"); window.scrollTo(0, 0); }
+  });
+  row.appendChild(a);
+  parent.appendChild(row);
+}
 
 async function openBeer(id, from){
   const beer = beers.find(x => x.id === id); if (!beer) return;
@@ -1627,8 +1642,12 @@ async function openBeer(id, from){
 
   const info = $("dInfo"); info.innerHTML = "";
   const place = [beer.brewery_city, beer.brewery_region, beer.brewery_country].filter(Boolean).join(", ");
-  addLine(info, "Brewery", [beer.brewery_name, place].filter(Boolean).join(", "));
-  addLine(info, "Style", beer.style + (beer.style_family && beer.style_family !== beer.style ? " (" + beer.style_family + ")" : ""));
+  if (beer.brewery_name){
+    addTagLine(info, "Brewery", beer.brewery_name, "brewery", beer.brewery_name);
+    if (place) addLine(info, "From", place);
+  } else addLine(info, "Brewery", place);
+  if (beer.style) addTagLine(info, "Style", beer.style, "style", beer.style);
+  if (beer.style_family && beer.style_family !== beer.style) addTagLine(info, "Style family", beer.style_family, "family", beer.style_family);
   addLine(info, "ABV", beer.abv != null ? beer.abv + "%" : "");
   addLine(info, "IBU", beer.ibu != null ? String(beer.ibu) : "");
   addLine(info, "Brewery type", beer.brewery_type);

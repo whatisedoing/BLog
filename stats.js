@@ -16,7 +16,9 @@ const S = {
   top: { type: "all", y: null, my: null, mm: null, from: "", to: "" },
   metric: "drinks", gran: "auto", brk: "family", brkAll: false,
   topSort: "rating", topN: 10,
-  yir: null, yirTop: 5
+  yir: null, yirTop: 5,
+  tagDim: "brewery", tagVal: null, tagSort: "rating", tagQ: "", tagListSort: "n", tagN: 30, ckN: 25,
+  recN: 10, flavMin: 3
 };
 
 /* ---------- tiny helpers ---------- */
@@ -61,7 +63,28 @@ const plural = (n, one, many) => n + " " + (n === 1 ? one : many);
     ".st-more{margin-top:10px;width:100%}",
     ".st-big{font-size:1.05rem;margin:2px 0 8px}",
     "#stBody h2{margin-top:22px}",
-    "#stBody select{margin-top:8px}"
+    "#stBody select{margin-top:8px}",
+    "#stTabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
+    "#stTabs::-webkit-scrollbar{display:none}",
+    "#stTabs .tab{flex:0 0 auto;white-space:nowrap;padding:8px 13px}",
+    ".st-tag{display:block;width:100%;margin:0 0 8px;padding:10px 13px;text-align:left;border:1px solid var(--line);",
+    " border-radius:12px;background:var(--leather);color:inherit;font-size:1rem}",
+    ".st-tag:hover{background:var(--leather2);border-color:rgba(209,160,73,.45)}",
+    ".st-tag .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}",
+    ".st-tag .t b{font-weight:normal;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".st-tag .t span{color:var(--brass);white-space:nowrap;font-size:.9rem;font-family:system-ui,sans-serif}",
+    ".st-tag .st-cnt{margin-top:5px;font-size:.74rem;color:var(--muted);font-family:system-ui,sans-serif}",
+    ".st-back{width:auto;margin:0 0 10px;padding:7px 13px;border-radius:999px;font-size:.85rem}",
+    ".st-flav{padding:9px 0}",
+    ".st-flav .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}",
+    ".st-flav .t b{font-weight:normal}",
+    ".st-flav .t span{white-space:nowrap;font-family:system-ui,sans-serif;font-size:.86rem;color:var(--brass)}",
+    ".st-flav .t span i{font-style:normal;color:var(--muted);margin-left:6px}",
+    ".st-up{color:#8fc0a4}",
+    ".st-dn{color:#c98f8f}",
+    ".st-mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}",
+    ".st-mini span{border:1px solid rgba(209,160,73,.4);border-radius:999px;padding:3px 10px;font-size:.72rem;color:#cbb690;font-family:system-ui,sans-serif}",
+    "#stBody input.st-find{margin-top:10px}"
   ].join("\n");
   document.head.appendChild(s);
 })();
@@ -95,15 +118,29 @@ function summarize(items){
 function countBy(items, fn){
   const m = new Map(); let missing = 0;
   items.forEach(x => {
-    const name = (fn(x) || "").toString().trim();
-    if (!name){ missing++; return; }
-    const k = name.toLowerCase(); let t = m.get(k);
-    if (!t){ t = { name: name, n: 0 }; m.set(k, t); }
-    t.n++;
+    let raw = fn(x);
+    if (!Array.isArray(raw)) raw = [raw];
+    const names = raw.map(v => (v == null ? "" : String(v)).trim()).filter(Boolean);
+    if (!names.length){ missing++; return; }
+    const seen = new Set();
+    names.forEach(name => {
+      const k = name.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      let t = m.get(k);
+      if (!t){ t = { name: name, n: 0, rated: 0, sum: 0, beers: new Set(), last: 0 }; m.set(k, t); }
+      t.n++;
+      if (x.r != null){ t.rated++; t.sum += x.r; }
+      t.beers.add(x.c.beer_id);
+      if (x.ms > t.last) t.last = x.ms;
+    });
   });
-  const list = [...m.values()].sort((a, b) => b.n - a.n || (a.name < b.name ? -1 : 1));
+  const list = [...m.values()];
+  list.forEach(t => { t.avg = t.rated ? t.sum / t.rated : null; t.nbeers = t.beers.size; });
+  list.sort((a, b) => b.n - a.n || (a.name < b.name ? -1 : 1));
   return { list: list, missing: missing };
 }
+function flavOf(x){ const f = x.c.flavour_tags; return Array.isArray(f) ? f : []; }
 
 function topBeers(items, mode){
   const m = new Map();
@@ -371,14 +408,16 @@ function timeChart(parent, items, bd){
 
 /* ---------- Overview tab ---------- */
 const DIMS = [
-  ["family", "Style family", x => x.b.style_family],
-  ["style", "Style", x => x.b.style],
-  ["brewery", "Brewery", x => x.b.brewery_name],
-  ["serving", "Serving", x => (typeof SERVE_MAP !== "undefined" && SERVE_MAP[x.c.serving_style]) || x.c.serving_style],
-  ["venue", "Venue", x => x.c.venue_name],
-  ["country", "Country", x => x.b.brewery_country],
-  ["region", "Province or state", x => low(x.b.brewery_region) ? x.b.brewery_region.trim() + (low(x.b.brewery_country) ? ", " + x.b.brewery_country.trim() : "") : ""]
+  ["brewery", "Brewery", x => x.b.brewery_name, "breweries"],
+  ["style", "Style", x => x.b.style, "styles"],
+  ["flavour", "Flavour", flavOf, "flavours"],
+  ["family", "Style family", x => x.b.style_family, "style families"],
+  ["serving", "Serving", x => (typeof SERVE_MAP !== "undefined" && SERVE_MAP[x.c.serving_style]) || x.c.serving_style, "servings"],
+  ["venue", "Venue", x => x.c.venue_name, "venues"],
+  ["country", "Country", x => x.b.brewery_country, "countries"],
+  ["region", "Province or state", x => low(x.b.brewery_region) ? x.b.brewery_region.trim() + (low(x.b.brewery_country) ? ", " + x.b.brewery_country.trim() : "") : "", "provinces and states"]
 ];
+const dimPlural = d => d[3] || (d[1].toLowerCase() + "s");
 
 function chipRow(parent, opts, cur, set){
   const row = el("div", "chips st-grp");
@@ -534,6 +573,195 @@ function yearTab(root, all){
   }
 }
 
+
+/* ---------- Tags: browse every check-in behind a brewery, style or flavour ---------- */
+function ckRow(x){
+  const row = el("div", "entry hit"), top = el("div", "top");
+  top.appendChild(el("div", "name", x.b.name || "Unknown beer"));
+  if (x.r != null){
+    const r = el("div", "st-r"); r.appendChild(starsEl(x.r)); r.appendChild(el("span", "st-rn", x.r.toFixed(2)));
+    top.appendChild(r);
+  }
+  row.appendChild(top);
+  const a = [S.tagVal && S.tagDim === "brewery" ? "" : x.b.brewery_name, fmtDate(x.c.checked_in_at)].filter(Boolean);
+  if (a.length) row.appendChild(el("div", "sub", a.join(" \u00b7 ")));
+  const b = [x.c.serving_style, x.c.venue_name].filter(Boolean);
+  if (b.length) row.appendChild(el("div", "sub", b.join(" \u00b7 ")));
+  row.addEventListener("click", () => {
+    window.statsScroll = window.scrollY;
+    (typeof goBeer === "function" ? goBeer : openBeer)(x.c.beer_id, "stats");
+  });
+  return row;
+}
+function openTag(dim, val){
+  S.tab = "tags"; S.tagDim = dim; S.tagVal = val; S.ckN = 25; S.tagSort = "rating";
+  if (typeof pushState === "function") pushState({ view: "stats", tab: "tags", tagDim: dim, tagVal: val });
+  render(); window.scrollTo(0, 0);
+}
+function matchesTag(x, dim, val){
+  const d = DIMS.find(y => y[0] === dim); if (!d) return false;
+  let raw = d[2](x); if (!Array.isArray(raw)) raw = [raw];
+  return raw.some(v => low(v) === low(val));
+}
+function tagsTab(root, all){
+  const dim = DIMS.find(d => d[0] === S.tagDim) || DIMS[0];
+  if (S.tagVal){ tagDetail(root, all, dim); return; }
+  h2(root, "Browse by");
+  chipRow(root, DIMS.map(d => [d[0], d[1]]), S.tagDim, v => { S.tagDim = v; S.tagQ = ""; S.tagN = 30; });
+  const res = countBy(all, dim[2]);
+  if (!res.list.length){ root.appendChild(el("div", "empty", "Nothing recorded for this yet.")); return; }
+  const c = card(root);
+  if (res.list.length > 12){
+    const inp = document.createElement("input");
+    inp.className = "st-find"; inp.type = "search"; inp.autocomplete = "off";
+    inp.placeholder = "Search " + dimPlural(dim); inp.value = S.tagQ;
+    inp.addEventListener("input", () => { S.tagQ = inp.value; S.tagN = 30; draw(); });
+    c.appendChild(inp);
+  }
+  chipRow(c, [["n", "Most check-ins"], ["rating", "Highest rated"], ["az", "A to Z"]], S.tagListSort,
+    v => { S.tagListSort = v; S.tagN = 30; });
+  const box = el("div", "st-grp"); c.appendChild(box);
+  function draw(){
+    box.innerHTML = "";
+    const q = S.tagQ.trim().toLowerCase();
+    let list = res.list.filter(t => !q || t.name.toLowerCase().indexOf(q) >= 0);
+    if (S.tagListSort === "rating") list = list.slice().sort((a, b) => (b.avg == null ? -1 : b.avg) - (a.avg == null ? -1 : a.avg) || b.n - a.n);
+    else if (S.tagListSort === "az") list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
+    box.appendChild(el("div", "st-sub", list.length + " " + (list.length === 1 ? dim[1].toLowerCase() : dimPlural(dim)) +
+      (res.missing && !q ? "; " + plural(res.missing, "check-in", "check-ins") + " without one" : "")));
+    if (!list.length){ box.appendChild(el("div", "empty", "Nothing matches that.")); return; }
+    list.slice(0, S.tagN).forEach(t => {
+      const b = btn("st-tag", "", () => openTag(S.tagDim, t.name));
+      const row = el("div", "t");
+      row.appendChild(el("b", "", t.name));
+      const right = el("span");
+      right.textContent = t.avg != null ? "\u2605 " + t.avg.toFixed(2) : "not rated";
+      row.appendChild(right);
+      b.appendChild(row);
+      const mx = Math.max.apply(null, list.map(y => y.n));
+      const bar = el("div", "bar"), f = document.createElement("i");
+      f.style.width = (t.n / mx * 100) + "%"; bar.appendChild(f); b.appendChild(bar);
+      b.appendChild(el("div", "st-cnt", plural(t.n, "check-in", "check-ins") +
+        (S.tagDim === "brewery" || S.tagDim === "flavour" || S.tagDim === "style" ? " \u00b7 " + plural(t.nbeers, "beer", "beers") : "")));
+      box.appendChild(b);
+    });
+    if (list.length > S.tagN) box.appendChild(btn("quiet st-more", "Show more (" + Math.min(30, list.length - S.tagN) + " more)", () => { S.tagN += 30; draw(); }));
+  }
+  draw();
+}
+function tagDetail(root, all, dim){
+  root.appendChild(btn("quiet st-back", "\u2039 All " + dimPlural(dim), () => {
+    S.tagVal = null;
+    if (typeof pushState === "function") pushState({ view: "stats", tab: "tags", tagDim: S.tagDim });
+    render(); window.scrollTo(0, 0);
+  }));
+  const items = all.filter(x => matchesTag(x, S.tagDim, S.tagVal));
+  root.appendChild(el("h2", "", S.tagVal));
+  root.appendChild(el("div", "st-sub", dim[1]));
+  if (!items.length){ root.appendChild(el("div", "empty", "No check-ins here.")); return; }
+  const sum = summarize(items);
+  const g = el("div", "st-tiles");
+  [["Check-ins", String(sum.n)], ["Different beers", String(sum.beers)],
+   ["Average rating", sum.avg == null ? "\u2013" : sum.avg.toFixed(2)],
+   ["Last one", fmtDate(items[items.length - 1].c.checked_in_at)]].forEach(r => {
+    const t = el("div", "st-tile");
+    t.appendChild(el("div", "v", r[1])); t.appendChild(el("div", "l", r[0]));
+    g.appendChild(t);
+  });
+  root.appendChild(g);
+  if (S.tagDim !== "brewery"){
+    const br = countBy(items, x => x.b.brewery_name).list.slice(0, 3).map(t => t.name + " (" + t.n + ")").join(", ");
+    if (br) root.appendChild(el("div", "st-sub", "Mostly from " + br + "."));
+  }
+  h2(root, "Check-ins");
+  const c = card(root);
+  chipRow(c, [["rating", "Highest rated"], ["recent", "Most recent"]], S.tagSort, v => { S.tagSort = v; S.ckN = 25; });
+  const sorted = items.slice().sort(S.tagSort === "recent"
+    ? (a, b) => b.ms - a.ms
+    : (a, b) => (b.r == null ? -1 : b.r) - (a.r == null ? -1 : a.r) || b.ms - a.ms);
+  const box = el("div", "st-grp"); c.appendChild(box);
+  sorted.slice(0, S.ckN).forEach(x => box.appendChild(ckRow(x)));
+  if (sorted.length > S.ckN)
+    box.appendChild(btn("quiet st-more", "Show more (" + Math.min(25, sorted.length - S.ckN) + " more)", () => { S.ckN += 25; render(); }));
+}
+
+/* ---------- Flavours: which tasting notes go with your better ratings ---------- */
+function flavTab(root, all){
+  const rated = all.filter(x => x.r != null);
+  if (!rated.length){ root.appendChild(el("div", "empty", "Rate a few check-ins and this fills in.")); return; }
+  const overall = rated.reduce((t, x) => t + x.r, 0) / rated.length;
+  const res = countBy(rated, flavOf);
+  const enough = res.list.filter(t => t.rated >= S.flavMin).sort((a, b) => b.avg - a.avg);
+  h2(root, "Flavours you rate highest");
+  root.appendChild(el("div", "st-sub", "Your average across every rated check-in is " + overall.toFixed(2) +
+    ". Each row shows that flavour's average, how far it sits from yours, and how many rated check-ins it covers. " +
+    "A flavour appears once you have rated it " + S.flavMin + " times or more; tap one to see those check-ins."));
+  if (!enough.length){
+    root.appendChild(el("div", "empty", "Not enough rated check-ins carry the same flavour yet."));
+    return;
+  }
+  function flavList(parent, list){
+    list.forEach(t => {
+      const row = el("div", "st-flav"), head = el("div", "t");
+      head.appendChild(el("b", "", t.name));
+      const d = t.avg - overall;
+      const right = el("span", "", t.avg.toFixed(2));
+      const dd = el("i", Math.abs(d) < 0.005 ? "" : (d > 0 ? "st-up" : "st-dn"),
+        (d > 0 ? "+" : d < 0 ? "\u2212" : "\u00b1") + Math.abs(d).toFixed(2) + "  \u00b7  " + t.n);
+      right.appendChild(dd); head.appendChild(right);
+      row.appendChild(head);
+      const bar = el("div", "bar"), f = document.createElement("i");
+      f.style.width = (t.avg / 5 * 100) + "%";
+      if (d < 0) f.style.background = "#8a6a4a";
+      bar.appendChild(f); row.appendChild(bar);
+      row.addEventListener("click", () => openTag("flavour", t.name));
+      row.style.cursor = "pointer";
+      parent.appendChild(row);
+    });
+  }
+  let c = card(root);
+  flavList(c, enough.slice(0, 8));
+  if (enough.length > 10){
+    h2(root, "Flavours you rate lowest");
+    c = card(root);
+    flavList(c, enough.slice(-5).reverse());
+  }
+
+  const best = enough.filter(t => t.avg > overall).slice(0, 8);
+  h2(root, "Worth another round");
+  if (!best.length){
+    root.appendChild(el("div", "empty", "Nothing stands out above your average yet."));
+    return;
+  }
+  const names = {}; best.forEach(t => { names[t.name.toLowerCase()] = t.name; });
+  root.appendChild(el("div", "st-sub", "Beers you rate above your average that carry " +
+    best.map(t => t.name).join(", ") + "."));
+  const m = new Map();
+  all.forEach(x => {
+    let t = m.get(x.c.beer_id);
+    if (!t){ t = { id: x.c.beer_id, beer: x.b, n: 0, rated: 0, sum: 0, last: 0, fl: new Set() }; m.set(x.c.beer_id, t); }
+    t.n++; if (x.r != null){ t.rated++; t.sum += x.r; }
+    if (x.ms > t.last) t.last = x.ms;
+    flavOf(x).forEach(f => { const k = low(f); if (names[k]) t.fl.add(k); });
+  });
+  const picks = [...m.values()].filter(t => t.rated && t.fl.size);
+  picks.forEach(t => { t.avg = t.sum / t.rated; });
+  const good = picks.filter(t => t.avg >= overall)
+    .sort((a, b) => b.avg - a.avg || b.fl.size - a.fl.size || b.last - a.last);
+  if (!good.length){ root.appendChild(el("div", "empty", "No beers match those flavours yet.")); return; }
+  c = card(root);
+  good.slice(0, S.recN).forEach((t, i) => {
+    const row = beerRow(i + 1, t);
+    const chips = el("div", "st-mini");
+    [...t.fl].forEach(k => chips.appendChild(el("span", "", names[k])));
+    row.appendChild(chips);
+    row.appendChild(el("div", "sub", "Last had " + fmtDate(new Date(t.last).toISOString())));
+    c.appendChild(row);
+  });
+  if (good.length > S.recN)
+    c.appendChild(btn("quiet st-more", "Show more (" + Math.min(10, good.length - S.recN) + " more)", () => { S.recN += 10; render(); }));
+}
+
 /* ---------- entry point ---------- */
 function render(){
   const root = $("stBody"); if (!root) return;
@@ -549,10 +777,22 @@ function render(){
   root.innerHTML = "";
   const all = prep();
   if (!all.length){ root.appendChild(el("div", "empty", "Statistics will appear once you have some check-ins.")); return; }
-  if (S.tab === "top") topTab(root, all);
+  if (S.tab === "tags") tagsTab(root, all);
+  else if (S.tab === "flavour") flavTab(root, all);
+  else if (S.tab === "top") topTab(root, all);
   else if (S.tab === "year") yearTab(root, all);
   else overview(root, all);
 }
 
 window.renderStats = render;
+window.statsApply = function(st){
+  if (!st) return;
+  if (st.tab) S.tab = st.tab;
+  if (st.tagDim) S.tagDim = st.tagDim;
+  S.tagVal = st.tagVal || null;
+  if (!$("stats").classList.contains("hidden")) render();
+};
+window.statsOpenTag = function(dim, val){
+  S.tab = "tags"; S.tagDim = dim; S.tagVal = val; S.ckN = 25; S.tagSort = "rating";
+};
 })();
